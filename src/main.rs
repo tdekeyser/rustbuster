@@ -1,4 +1,5 @@
 use clap::{Parser, Subcommand};
+use reqwest::StatusCode;
 use url::Url;
 
 mod dir;
@@ -7,13 +8,13 @@ mod progress_bar;
 /// Imitation of Gobuster/ffuf in Rust.
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
-struct Cli {
+pub struct Cli {
     #[command(subcommand)]
-    command: Option<Commands>,
+    command: Option<Command>,
 }
 
 #[derive(Subcommand)]
-enum Commands {
+pub enum Command {
     /// Uses directory/file enumeration mode
     Dir {
         /// The target URL
@@ -23,6 +24,10 @@ enum Commands {
         /// Path to the wordlist.
         #[arg(short, long)]
         wordlist: std::path::PathBuf,
+
+        /// Status code that will be ignored, e.g. 404,500
+        #[arg(short, long, value_delimiter = ',', default_value = "404")]
+        blacklist_status_codes: Vec<StatusCode>,
     }
 }
 
@@ -30,10 +35,13 @@ enum Commands {
 #[tokio::main]
 async fn main() {
     let args = Cli::parse();
-
     match &args.command {
-        Some(Commands::Dir { url, wordlist }) => {
-            dir::run_command(url, wordlist).await.ok();
+        Some(Command::Dir {
+                 url,
+                 wordlist,
+                 blacklist_status_codes
+             }) => {
+            dir::run_command(url, wordlist, blacklist_status_codes).await.ok();
         }
         None => ()
     }

@@ -1,8 +1,11 @@
 Imitation of Gobuster/ffuf in Rust.
 
+### Todo
+
 dir command:
 [x] -u, --url string                        The target URL
 [x] -w, --wordlist string       Path to the wordlist.
 [x] -h, --help                              help for dir
-[ ] -b, --status-codes-blacklist string     Negative status codes (will override status-codes if set). Can also handle ranges like 200,300-400,404. (default "404")
+[x] -b, --status-codes-blacklist string     Status codes that will be ignored (default "404")
 [ ] --exclude-length string             exclude the following content lengths (completely ignores the status). You can separate multiple lengths by comma and it also supports ranges like 203-206
+[ ] -h, --headers               Custom headers. Use the format "Header1: Content1, Header2: Content2"
