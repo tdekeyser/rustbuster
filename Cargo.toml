@@ -1,0 +1,13 @@
+[package]
+name = "rustbuster"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+url = "2.5.0"
+clap = { version = "4.5.2", features = ["derive"] }
+indicatif = "0.17.8"
+reqwest = "0.11.26"
+tokio = { version = "1.36.0", features = ["rt", "rt-multi-thread", "macros"] }
