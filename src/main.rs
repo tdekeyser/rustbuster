@@ -1,36 +1,10 @@
-use clap::{Parser, Subcommand};
-use reqwest::StatusCode;
-use url::Url;
+use clap::Parser;
 
+use crate::cli::{Cli, Command};
+
+mod cli;
 mod dir;
 mod progress_bar;
-
-/// Imitation of Gobuster/ffuf in Rust.
-#[derive(Parser)]
-#[command(version, about, long_about = None)]
-pub struct Cli {
-    #[command(subcommand)]
-    command: Option<Command>,
-}
-
-#[derive(Subcommand)]
-pub enum Command {
-    /// Uses directory/file enumeration mode
-    Dir {
-        /// The target URL
-        #[arg(short, long)]
-        url: Url,
-
-        /// Path to the wordlist.
-        #[arg(short, long)]
-        wordlist: std::path::PathBuf,
-
-        /// Status code that will be ignored, e.g. 404,500
-        #[arg(short, long, value_delimiter = ',', default_value = "404")]
-        blacklist_status_codes: Vec<StatusCode>,
-    }
-}
-
 
 #[tokio::main]
 async fn main() {
@@ -48,8 +22,13 @@ async fn main() {
 }
 
 
-#[test]
-fn verify_cli() {
-    use clap::CommandFactory;
-    Cli::command().debug_assert()
+#[cfg(test)]
+mod tests {
+    use crate::cli::Cli;
+
+    #[test]
+    fn verify_cli() {
+        use clap::CommandFactory;
+        Cli::command().debug_assert()
+    }
 }
