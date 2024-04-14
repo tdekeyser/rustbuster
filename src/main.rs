@@ -46,10 +46,7 @@ async fn run_dir_command(url: &Url,
         let request_url = format!("{}{}", url, word);
 
         match http_client.probe(&request_url).await? {
-            Some(response) => pb.println(format!(
-                "/{:<30} ({:>10}) [Size: {:?}]",
-                word, response.status_code, response.content_length)
-            ),
+            Some(response) => pb.println(format!("/{:<30} {}", word, response)),
             None => ()
         }
 

@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::fmt::{Debug, Formatter};
+use std::fmt::{Debug, Display, Formatter};
 
 use reqwest::{Client, Error, Method, StatusCode};
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue, USER_AGENT};
@@ -12,10 +12,24 @@ pub struct HttpClient {
     exclude_length: ExcludeContentLength,
 }
 
+pub struct HttpClientBuilder {
+    headers: HeaderMap,
+    status_code_blacklist: Vec<StatusCode>,
+    exclude_length: ExcludeContentLength,
+}
+
 #[derive(Debug)]
 pub struct HttpResponse {
     pub status_code: StatusCode,
     pub content_length: u32,
+}
+
+pub struct HttpError(pub String);
+
+impl Display for HttpResponse {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "({:>10}) [Size: {:?}]", self.status_code, self.content_length)
+    }
 }
 
 impl HttpClient {
@@ -38,9 +52,6 @@ impl HttpClient {
     }
 }
 
-
-pub struct HttpError(pub String);
-
 impl From<Error> for HttpError {
     fn from(e: Error) -> Self {
         HttpError(e.to_string())
@@ -51,12 +62,6 @@ impl Debug for HttpError {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         write!(f, "{}", self.0)
     }
-}
-
-pub struct HttpClientBuilder {
-    headers: HeaderMap,
-    status_code_blacklist: Vec<StatusCode>,
-    exclude_length: ExcludeContentLength,
 }
 
 impl HttpClientBuilder {
