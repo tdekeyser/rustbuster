@@ -1,11 +1,7 @@
-use std::fs;
-use std::path::PathBuf;
-
 use clap::Parser;
-use url::Url;
 
 use crate::cli::{Cli, Command};
-use crate::http::{HttpClient, HttpError};
+use crate::http::{HttpBrute, HttpError};
 
 mod cli;
 mod progress_bar;
@@ -24,37 +20,17 @@ async fn main() -> Result<(), HttpError> {
                  blacklist_status_codes,
                  exclude_length
              }) => {
-            let http_client = HttpClient::builder()
+            let http_brute = HttpBrute::builder()
                 .with_method(method.clone())
                 .with_headers(headers.clone())?
                 .with_status_code_blacklist(blacklist_status_codes.clone())
                 .with_exclude_length(exclude_length.clone())
                 .build()?;
-            run_dir_command(url, wordlist, http_client).await?;
+            http_brute.brute_force(url, wordlist).await?;
             Ok(())
         }
         None => Err(HttpError("no matching command".to_string()))
     }
-}
-
-
-async fn run_dir_command(url: &Url,
-                         wordlist: &PathBuf,
-                         http_client: HttpClient) -> Result<(), HttpError> {
-    let wordlist = fs::read_to_string(wordlist).expect("file not found");
-    let pb = progress_bar::new(wordlist.lines().count() as u64);
-
-    for word in wordlist.lines() {
-        let request_url = format!("{}{}", url, word);
-
-        match http_client.probe(&request_url).await? {
-            Some(response) => pb.println(format!("/{:<30} {}", word, response)),
-            None => ()
-        }
-
-        pb.inc(1);
-    }
-    Ok(())
 }
 
 
