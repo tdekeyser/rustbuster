@@ -20,8 +20,8 @@ pub struct HttpClientBuilder {
 
 #[derive(Debug)]
 pub struct HttpResponse {
-    pub status_code: StatusCode,
-    pub content_length: u32,
+    status_code: StatusCode,
+    content_length: u32,
 }
 
 pub struct HttpError(pub String);
