@@ -2,7 +2,7 @@ use std::error::Error;
 
 use clap::{Parser, Subcommand};
 use reqwest::header::{HeaderName, HeaderValue};
-use reqwest::StatusCode;
+use reqwest::{Method, StatusCode};
 use url::Url;
 
 use crate::exclude_length::ExcludeContentLength;
@@ -26,6 +26,10 @@ pub enum Command {
         /// Path to the wordlist.
         #[arg(short, long)]
         wordlist: std::path::PathBuf,
+
+        /// Use the following HTTP method (default "GET")
+        #[arg(short, long, default_value = "GET")]
+        method: Method,
 
         /// Status code that will be ignored, e.g. 404,500
         #[arg(short, long, value_delimiter = ',', default_value = "404")]

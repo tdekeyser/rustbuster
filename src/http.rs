@@ -8,11 +8,13 @@ use crate::exclude_length::ExcludeContentLength;
 
 pub struct HttpClient {
     client: Client,
+    method: Method,
     status_code_blacklist: Vec<StatusCode>,
     exclude_length: ExcludeContentLength,
 }
 
 pub struct HttpClientBuilder {
+    method: Method,
     headers: HeaderMap,
     status_code_blacklist: Vec<StatusCode>,
     exclude_length: ExcludeContentLength,
@@ -38,7 +40,7 @@ impl HttpClient {
     }
 
     pub async fn probe(&self, url: &str) -> Result<Option<HttpResponse>, HttpError> {
-        let response = self.client.request(Method::GET, url).send().await?;
+        let response = self.client.request(self.method.clone(), url).send().await?;
         let status_code = response.status();
         let content_length = response.text().await.unwrap().len() as u32;
 
@@ -71,6 +73,7 @@ impl HttpClientBuilder {
 
         HttpClientBuilder {
             headers,
+            method: Method::GET,
             status_code_blacklist: Vec::new(),
             exclude_length: ExcludeContentLength::Empty,
         }
@@ -83,9 +86,15 @@ impl HttpClientBuilder {
 
         Ok(HttpClient {
             client,
+            method: self.method,
             status_code_blacklist: self.status_code_blacklist,
             exclude_length: self.exclude_length,
         })
+    }
+
+    pub fn with_method(mut self, method: Method) -> HttpClientBuilder {
+        self.method = method;
+        self
     }
 
     pub fn with_headers(mut self, headers: Vec<(HeaderName, HeaderValue)>) -> Result<HttpClientBuilder, HttpError> {

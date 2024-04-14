@@ -19,11 +19,13 @@ async fn main() -> Result<(), HttpError> {
         Some(Command::Dir {
                  url,
                  wordlist,
+                 method,
                  headers,
                  blacklist_status_codes,
                  exclude_length
              }) => {
             let http_client = HttpClient::builder()
+                .with_method(method.clone())
                 .with_headers(headers.clone())?
                 .with_status_code_blacklist(blacklist_status_codes.clone())
                 .with_exclude_length(exclude_length.clone())
