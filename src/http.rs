@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 
 use reqwest::{Client, Error, Method, StatusCode};
@@ -22,7 +23,7 @@ impl HttpClient {
         HttpClientBuilder::new()
     }
 
-    pub async fn probe(&self, url: String) -> Result<Option<HttpResponse>, HttpError> {
+    pub async fn probe(&self, url: &str) -> Result<Option<HttpResponse>, HttpError> {
         let response = self.client.request(Method::GET, url).send().await?;
         let status_code = response.status();
         let content_length = response.text().await.unwrap().len() as u32;
@@ -82,9 +83,11 @@ impl HttpClientBuilder {
         })
     }
 
-    pub fn with_header(mut self, key: HeaderName, value: HeaderValue) -> HttpClientBuilder {
-        self.headers.insert(key, value);
-        self
+    pub fn with_headers(mut self, headers: Vec<(HeaderName, HeaderValue)>) -> Result<HttpClientBuilder, HttpError> {
+        self.headers.extend(headers.iter()
+            .map(|(k, v)| (k.clone(), v.clone()))
+            .collect::<HashMap<HeaderName, HeaderValue>>());
+        Ok(self)
     }
 
     pub fn with_status_code_blacklist(mut self, blacklist: Vec<StatusCode>) -> HttpClientBuilder {
@@ -101,6 +104,7 @@ impl HttpClientBuilder {
 
 #[cfg(test)]
 mod tests {
+    use reqwest::header::{AUTHORIZATION, HeaderValue, USER_AGENT};
     use reqwest::StatusCode;
 
     use crate::http::{HttpClient, HttpError};
@@ -111,9 +115,23 @@ mod tests {
             .with_status_code_blacklist(vec![StatusCode::NOT_FOUND])
             .build()?;
 
-        match http_client.probe("http://localhost:8080/helo".to_string()).await? {
+        match http_client.probe("http://localhost:8080/helo").await? {
             Some(r) => Err(HttpError(format!("{:?}", r))),
             None => Ok(())
         }
+    }
+
+    #[test]
+    fn http_client_builder_maps_headers() -> Result<(), HttpError> {
+        let headers = vec![
+            (USER_AGENT, HeaderValue::from_static("rustbuster")),
+            (AUTHORIZATION, HeaderValue::from_static("Bearer 1234")),
+        ];
+
+        let _client = HttpClient::builder()
+            .with_headers(headers)?
+            .build()?;
+
+        Ok(())
     }
 }

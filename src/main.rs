@@ -19,10 +19,12 @@ async fn main() -> Result<(), HttpError> {
         Some(Command::Dir {
                  url,
                  wordlist,
+                 headers,
                  blacklist_status_codes,
                  exclude_length
              }) => {
             let http_client = HttpClient::builder()
+                .with_headers(headers.clone())?
                 .with_status_code_blacklist(blacklist_status_codes.clone())
                 .with_exclude_length(exclude_length.clone())
                 .build()?;
@@ -43,7 +45,7 @@ async fn run_dir_command(url: &Url,
     for word in wordlist.lines() {
         let request_url = format!("{}{}", url, word);
 
-        match http_client.probe(request_url).await? {
+        match http_client.probe(&request_url).await? {
             Some(response) => pb.println(format!(
                 "/{:<30} ({:>10}) [Size: {:?}]",
                 word, response.status_code, response.content_length)
