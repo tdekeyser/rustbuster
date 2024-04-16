@@ -1,4 +1,6 @@
-Imitation of Gobuster/ffuf in Rust.
+# Rustbuster
+
+Imitation of Gobuster/ffuf, mainly to learn Rust.
 
 ## `dir` mode
 
