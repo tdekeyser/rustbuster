@@ -10,20 +10,18 @@ use url::Url;
 use crate::exclude_length::ExcludeContentLength;
 use crate::progress_bar;
 
-pub struct HttpBrute {
-    client: Client,
-    method: Method,
-    status_code_blacklist: Vec<StatusCode>,
-    exclude_length: ExcludeContentLength,
-}
-
 #[derive(Debug)]
 pub struct HttpResponse {
     status_code: StatusCode,
     content_length: u32,
 }
 
-pub struct HttpError(pub String);
+pub struct HttpBrute {
+    client: Client,
+    method: Method,
+    status_code_blacklist: Vec<StatusCode>,
+    exclude_length: ExcludeContentLength,
+}
 
 impl HttpBrute {
     pub fn builder() -> HttpBruteBuilder {
@@ -68,6 +66,7 @@ impl Display for HttpResponse {
     }
 }
 
+pub struct HttpError(pub String);
 
 impl From<Error> for HttpError {
     fn from(e: Error) -> Self {
