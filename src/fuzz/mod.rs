@@ -1,15 +1,15 @@
-use std::collections::HashMap;
 use std::error::Error;
 use std::fmt::{Display, Formatter};
 use std::fs;
 use std::path::PathBuf;
 
 use reqwest::{Client, Method, StatusCode};
-use reqwest::header::{HeaderMap, HeaderName, HeaderValue, USER_AGENT};
 use url::Url;
 
 use crate::exclude_length::ExcludeContentLength;
 use crate::progress_bar;
+
+mod builder;
 
 type Result<T> = std::result::Result<T, Box<dyn Error>>;
 
@@ -34,8 +34,8 @@ pub struct HttpFuzzer {
 }
 
 impl HttpFuzzer {
-    pub fn builder() -> HttpFuzzerBuilder {
-        HttpFuzzerBuilder::new()
+    pub fn builder() -> builder::HttpFuzzerBuilder {
+        builder::HttpFuzzerBuilder::new()
     }
 
     pub async fn brute_force(&self, url: &Url, wordlist: &PathBuf) -> Result<()> {
@@ -43,12 +43,11 @@ impl HttpFuzzer {
         let pb = progress_bar::new(wordlist.lines().count() as u64);
 
         for word in wordlist.lines() {
+            pb.inc(1);
             match self.probe(url, word).await? {
                 Some(response) => pb.println(format!("/{:<30} {}", word, response)),
                 None => ()
             }
-
-            pb.inc(1);
         }
         Ok(())
     }
@@ -56,76 +55,19 @@ impl HttpFuzzer {
     async fn probe(&self, url: &Url, word: &str) -> Result<Option<HttpResponse>> {
         let request_url = url.as_str().replace(FUZZ, word);
 
-        let response = self.client.request(self.method.clone(), request_url)
+        let response = self.client
+            .request(self.method.clone(), request_url)
             .send()
             .await?;
 
         let status_code = response.status();
         let content_length = response.text().await?.len() as u32;
 
-        let ignore_result = self.status_code_blacklist.contains(&status_code) ||
-            self.exclude_length.matches(content_length);
-
-        match ignore_result {
+        match self.status_code_blacklist.contains(&status_code) ||
+            self.exclude_length.matches(content_length) {
             true => Ok(None),
             false => Ok(Some(HttpResponse { status_code, content_length }))
         }
-    }
-}
-
-pub struct HttpFuzzerBuilder {
-    method: Method,
-    headers: HeaderMap,
-    status_code_blacklist: Vec<StatusCode>,
-    exclude_length: ExcludeContentLength,
-}
-
-impl HttpFuzzerBuilder {
-    fn new() -> HttpFuzzerBuilder {
-        let mut headers = HeaderMap::new();
-        headers.insert(USER_AGENT, HeaderValue::from_static("rustbuster"));
-
-        HttpFuzzerBuilder {
-            headers,
-            method: Method::GET,
-            status_code_blacklist: Vec::new(),
-            exclude_length: ExcludeContentLength::Empty,
-        }
-    }
-
-    pub fn build(self) -> Result<HttpFuzzer> {
-        let client = Client::builder()
-            .default_headers(self.headers)
-            .build()?;
-
-        Ok(HttpFuzzer {
-            client,
-            method: self.method,
-            status_code_blacklist: self.status_code_blacklist,
-            exclude_length: self.exclude_length,
-        })
-    }
-
-    pub fn with_method(mut self, method: Method) -> HttpFuzzerBuilder {
-        self.method = method;
-        self
-    }
-
-    pub fn with_headers(mut self, headers: Vec<(HeaderName, HeaderValue)>) -> Result<HttpFuzzerBuilder> {
-        self.headers.extend(headers.iter()
-            .map(|(k, v)| (k.clone(), v.clone()))
-            .collect::<HashMap<HeaderName, HeaderValue>>());
-        Ok(self)
-    }
-
-    pub fn with_status_code_blacklist(mut self, blacklist: Vec<StatusCode>) -> HttpFuzzerBuilder {
-        self.status_code_blacklist = blacklist;
-        self
-    }
-
-    pub fn with_exclude_length(mut self, exclude_length: ExcludeContentLength) -> HttpFuzzerBuilder {
-        self.exclude_length = exclude_length;
-        self
     }
 }
 

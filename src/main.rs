@@ -1,9 +1,7 @@
 use std::error::Error;
-
 use clap::Parser;
 
 use crate::cli::{Cli, Command};
-use crate::fuzz::HttpFuzzer;
 
 mod cli;
 mod progress_bar;
@@ -22,7 +20,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                  blacklist_status_codes,
                  exclude_length
              }) => {
-            let fuzzer = HttpFuzzer::builder()
+            let fuzzer = fuzz::HttpFuzzer::builder()
                 .with_method(method.clone())
                 .with_headers(headers.clone())?
                 .with_status_code_blacklist(blacklist_status_codes.clone())
