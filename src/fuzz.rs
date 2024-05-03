@@ -145,15 +145,18 @@ mod tests {
     use reqwest::header::{AUTHORIZATION, HeaderValue, USER_AGENT};
     use reqwest::StatusCode;
 
-    use crate::fuzz::{HttpFuzzer, FuzzError};
+    use crate::fuzz::{FuzzError, HttpFuzzer};
 
     #[tokio::test]
     async fn http_client_ignores_status_codes() -> Result<(), FuzzError> {
-        let http_client = HttpFuzzer::builder()
+        let mut server = mockito::Server::new_async().await;
+        server.mock("GET", "/non-existing").with_status(404).create_async().await;
+
+        let fuzzer = HttpFuzzer::builder()
             .with_status_code_blacklist(vec![StatusCode::NOT_FOUND])
             .build()?;
 
-        match http_client.probe("http://localhost:8080/helo").await? {
+        match fuzzer.probe(&format!("{}/non-existing", server.url())).await? {
             Some(r) => Err(FuzzError(format!("{:?}", r))),
             None => Ok(())
         }
