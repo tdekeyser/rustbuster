@@ -1,7 +1,9 @@
+use std::error::Error;
+
 use clap::Parser;
 
 use crate::cli::{Cli, Command};
-use crate::fuzz::{HttpFuzzer, FuzzError};
+use crate::fuzz::HttpFuzzer;
 
 mod cli;
 mod progress_bar;
@@ -9,7 +11,7 @@ mod exclude_length;
 mod fuzz;
 
 #[tokio::main]
-async fn main() -> Result<(), FuzzError> {
+async fn main() -> Result<(), Box<dyn Error>> {
     let args = Cli::parse();
     match &args.command {
         Some(Command::Dir {
@@ -29,7 +31,7 @@ async fn main() -> Result<(), FuzzError> {
             fuzzer.brute_force(url, wordlist).await?;
             Ok(())
         }
-        None => Err(FuzzError("no matching command".to_string()))
+        None => Err("no matching command".into())
     }
 }
 
