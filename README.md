@@ -25,7 +25,7 @@ Options:
 ```
 
 TODO:
-- [ ] use FUZZ keyword in URL
-- [ ] use FUZZ keyword in headers
+- [x] use FUZZ keyword in URL
+- [x] use FUZZ keyword in headers
 - [ ] error if no FUZZ keyword found anywhere
 - [ ] remove dir mode -- default and not relevant for fuzzing

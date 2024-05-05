@@ -1,8 +1,8 @@
 use std::error::Error;
 
 use clap::{Parser, Subcommand};
-use reqwest::header::{HeaderName, HeaderValue};
 use reqwest::{Method, StatusCode};
+use reqwest::header::{HeaderName, HeaderValue};
 use url::Url;
 
 use crate::exclude_length::ExcludeContentLength;
@@ -55,12 +55,14 @@ fn parse_headers(s: &str) -> Result<(HeaderName, HeaderValue), Box<dyn Error + S
 
 #[cfg(test)]
 mod tests {
+    use std::error::Error;
+
     use reqwest::header::{HeaderName, HeaderValue};
 
     use crate::cli::parse_headers;
 
     #[test]
-    fn parse_key_val_parses_colon() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
+    fn parse_key_val_parses_colon() -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
         let (key, val) = parse_headers("user-agent: rustbuster")?;
 
         assert_eq!(key, HeaderName::from_static("user-agent"));

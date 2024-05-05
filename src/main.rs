@@ -22,7 +22,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
              }) => {
             let fuzzer = fuzz::HttpFuzzer::builder()
                 .with_method(method.clone())
-                .with_headers(headers.clone())?
+                .with_headers(headers.clone())
                 .with_status_code_blacklist(blacklist_status_codes.clone())
                 .with_exclude_length(exclude_length.clone())
                 .build()?;

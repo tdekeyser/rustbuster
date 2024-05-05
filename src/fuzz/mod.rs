@@ -1,9 +1,11 @@
+use std::collections::HashMap;
 use std::error::Error;
 use std::fmt::{Display, Formatter};
 use std::fs;
 use std::path::PathBuf;
 
 use reqwest::{Client, Method, StatusCode};
+use reqwest::header::{HeaderMap, HeaderName};
 use url::Url;
 
 use crate::exclude_length::ExcludeContentLength;
@@ -31,6 +33,7 @@ pub struct HttpFuzzer {
     method: Method,
     status_code_blacklist: Vec<StatusCode>,
     exclude_length: ExcludeContentLength,
+    fuzzed_headers: HashMap<String, String>,
 }
 
 impl HttpFuzzer {
@@ -54,9 +57,11 @@ impl HttpFuzzer {
 
     async fn probe(&self, url: &Url, word: &str) -> Result<Option<HttpResponse>> {
         let request_url = url.as_str().replace(FUZZ, word);
+        let extra_headers = self.replace_keyword_in_headers(word)?;
 
         let response = self.client
             .request(self.method.clone(), request_url)
+            .headers(extra_headers)
             .send()
             .await?;
 
@@ -69,11 +74,23 @@ impl HttpFuzzer {
             false => Ok(Some(HttpResponse { status_code, content_length }))
         }
     }
+
+    fn replace_keyword_in_headers(&self, word: &str) -> Result<HeaderMap> {
+        let mut headers = HeaderMap::new();
+
+        for (k, v) in self.fuzzed_headers.iter() {
+            let key = k.replace(FUZZ, word);
+            let value = v.replace(FUZZ, word);
+            headers.insert(HeaderName::from_bytes(key.as_bytes())?, value.parse()?);
+        }
+        Ok(headers)
+    }
 }
 
 
 #[cfg(test)]
 mod tests {
+    use reqwest::header::USER_AGENT;
     use reqwest::StatusCode;
     use url::Url;
 
@@ -136,6 +153,28 @@ mod tests {
         match fuzzer.probe(&url, "len").await? {
             Some(r) => Err(format!("{:}", r).into()),
             None => Ok(())
+        }
+    }
+
+    #[tokio::test]
+    async fn fuzzer_keyword_in_headers() -> Result<()> {
+        let mut server = mockito::Server::new_async().await;
+        server.mock("GET", "/do-fuzz")
+            .match_header(USER_AGENT.as_str(), "fill-to-header")
+            .create_async()
+            .await;
+
+        let fuzzer = HttpFuzzer::builder()
+            .with_headers(vec![(USER_AGENT, "FUZZ".parse()?)])
+            .build()?;
+
+        let url = Url::parse(&format!("{}/do-fuzz", server.url()).as_str())?;
+
+        match fuzzer.probe(&url, "fill-to-header").await? {
+            Some(r) => {
+                Ok(assert_eq!(r.status_code, StatusCode::OK))
+            }
+            None => Err("expected response".into())
         }
     }
 }

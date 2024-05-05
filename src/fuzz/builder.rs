@@ -11,6 +11,7 @@ pub struct HttpFuzzerBuilder {
     headers: HeaderMap,
     status_code_blacklist: Vec<StatusCode>,
     exclude_length: ExcludeContentLength,
+    fuzzed_headers: HashMap<String, String>,
 }
 
 impl HttpFuzzerBuilder {
@@ -23,6 +24,7 @@ impl HttpFuzzerBuilder {
             method: Method::GET,
             status_code_blacklist: Vec::new(),
             exclude_length: ExcludeContentLength::Empty,
+            fuzzed_headers: HashMap::new(),
         }
     }
 
@@ -36,6 +38,7 @@ impl HttpFuzzerBuilder {
             method: self.method,
             status_code_blacklist: self.status_code_blacklist,
             exclude_length: self.exclude_length,
+            fuzzed_headers: self.fuzzed_headers,
         })
     }
 
@@ -44,11 +47,18 @@ impl HttpFuzzerBuilder {
         self
     }
 
-    pub fn with_headers(mut self, headers: Vec<(HeaderName, HeaderValue)>) -> Result<HttpFuzzerBuilder> {
+    pub fn with_headers(mut self, headers: Vec<(HeaderName, HeaderValue)>) -> HttpFuzzerBuilder {
         self.headers.extend(headers.iter()
             .map(|(k, v)| (k.clone(), v.clone()))
             .collect::<HashMap<HeaderName, HeaderValue>>());
-        Ok(self)
+
+        self.fuzzed_headers.extend(
+            headers.iter()
+                .filter(|(k, v)| format!("{:?}{:?}", k, v).contains("FUZZ"))
+                .map(|(k, v)| (k.clone().to_string(), String::from(v.clone().to_str().unwrap_or_default())))
+                .collect::<HashMap<String, String>>());
+
+        self
     }
 
     pub fn with_status_code_blacklist(mut self, blacklist: Vec<StatusCode>) -> HttpFuzzerBuilder {
@@ -61,3 +71,26 @@ impl HttpFuzzerBuilder {
         self
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use reqwest::header::{COOKIE, USER_AGENT};
+
+    use crate::fuzz::{HttpFuzzer, Result};
+
+    #[test]
+    fn headers_containing_fuzz_are_fuzzed_headers() -> Result<()> {
+        let builder = HttpFuzzer::builder()
+            .with_headers(vec![
+                (USER_AGENT, "hello".parse()?),
+                (COOKIE, "FUZZ".parse()?),
+            ]);
+
+        assert!(builder.fuzzed_headers.get(COOKIE.as_str()).is_some());
+        assert!(builder.fuzzed_headers.get(USER_AGENT.as_str()).is_none());
+        assert!(builder.headers.get(COOKIE.as_str()).is_some());
+        assert!(builder.headers.get(USER_AGENT.as_str()).is_some());
+        Ok(())
+    }
+}
+
