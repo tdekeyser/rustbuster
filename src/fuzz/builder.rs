@@ -2,11 +2,13 @@ use std::collections::HashMap;
 
 use reqwest::{Client, Method, StatusCode};
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue, USER_AGENT};
+use url::Url;
 
 use crate::exclude_length::ExcludeContentLength;
 use crate::fuzz::{HttpFuzzer, Result};
 
 pub struct HttpFuzzerBuilder {
+    url: Url,
     method: Method,
     headers: HeaderMap,
     status_code_blacklist: Vec<StatusCode>,
@@ -20,6 +22,7 @@ impl HttpFuzzerBuilder {
         headers.insert(USER_AGENT, HeaderValue::from_static("rustbuster"));
 
         HttpFuzzerBuilder {
+            url: "http://localhost:8080".parse().unwrap(),
             headers,
             method: Method::GET,
             status_code_blacklist: Vec::new(),
@@ -29,17 +32,32 @@ impl HttpFuzzerBuilder {
     }
 
     pub fn build(self) -> Result<HttpFuzzer> {
-        let client = Client::builder()
-            .default_headers(self.headers)
-            .build()?;
+        match self.validate() {
+            Ok(_) => {
+                let client = Client::builder()
+                    .default_headers(self.headers)
+                    .build()?;
 
-        Ok(HttpFuzzer {
-            client,
-            method: self.method,
-            status_code_blacklist: self.status_code_blacklist,
-            exclude_length: self.exclude_length,
-            fuzzed_headers: self.fuzzed_headers,
-        })
+                Ok(HttpFuzzer {
+                    url: self.url,
+                    client,
+                    method: self.method,
+                    status_code_blacklist: self.status_code_blacklist,
+                    exclude_length: self.exclude_length,
+                    fuzzed_headers: self.fuzzed_headers,
+                })
+            }
+            Err(e) => Err(e)
+        }
+    }
+
+    fn validate(&self) -> Result<()> {
+        Err("no FUZZ keyword found".into())
+    }
+
+    pub fn with_url(mut self, url: Url) -> HttpFuzzerBuilder {
+        self.url = url;
+        self
     }
 
     pub fn with_method(mut self, method: Method) -> HttpFuzzerBuilder {
@@ -77,6 +95,19 @@ mod tests {
     use reqwest::header::{COOKIE, USER_AGENT};
 
     use crate::fuzz::{HttpFuzzer, Result};
+
+    #[test]
+    fn error_when_no_fuzz_keyword_found() -> Result<()> {
+        match HttpFuzzer::builder()
+            .with_url("http://localhost:9999".parse().unwrap())
+            .build() {
+            Ok(_) => Err("not supposed to succeed".into()),
+            Err(e) => {
+                assert!(e.to_string().contains("no FUZZ keyword found"));
+                Ok(())
+            }
+        }
+    }
 
     #[test]
     fn headers_containing_fuzz_are_fuzzed_headers() -> Result<()> {

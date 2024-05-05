@@ -29,6 +29,7 @@ impl Display for HttpResponse {
 }
 
 pub struct HttpFuzzer {
+    url: Url,
     client: Client,
     method: Method,
     status_code_blacklist: Vec<StatusCode>,
@@ -41,13 +42,13 @@ impl HttpFuzzer {
         builder::HttpFuzzerBuilder::new()
     }
 
-    pub async fn brute_force(&self, url: &Url, wordlist: &PathBuf) -> Result<()> {
+    pub async fn brute_force(&self, wordlist: &PathBuf) -> Result<()> {
         let wordlist = fs::read_to_string(wordlist).expect("file not found");
         let pb = progress_bar::new(wordlist.lines().count() as u64);
 
         for word in wordlist.lines() {
             pb.inc(1);
-            match self.probe(url, word).await? {
+            match self.probe(word).await? {
                 Some(response) => pb.println(format!("/{:<30} {}", word, response)),
                 None => ()
             }
@@ -55,8 +56,8 @@ impl HttpFuzzer {
         Ok(())
     }
 
-    async fn probe(&self, url: &Url, word: &str) -> Result<Option<HttpResponse>> {
-        let request_url = url.as_str().replace(FUZZ, word);
+    async fn probe(&self, word: &str) -> Result<Option<HttpResponse>> {
+        let request_url = self.url.as_str().replace(FUZZ, word);
         let extra_headers = self.replace_keyword_in_headers(word)?;
 
         let response = self.client
@@ -105,11 +106,13 @@ mod tests {
             .with_body("hello")
             .create_async().await;
 
-        let fuzzer = HttpFuzzer::builder().build()?;
-
         let url = Url::parse(&format!("{}/FUZZ", server.url()).as_str())?;
 
-        match fuzzer.probe(&url, "hello").await? {
+        let fuzzer = HttpFuzzer::builder()
+            .with_url(url)
+            .build()?;
+
+        match fuzzer.probe("hello").await? {
             Some(r) => {
                 assert_eq!(r.status_code, StatusCode::OK);
                 assert_eq!(r.content_length, 5);
@@ -124,13 +127,14 @@ mod tests {
         let mut server = mockito::Server::new_async().await;
         server.mock("GET", "/non-existing").with_status(404).create_async().await;
 
+        let url = Url::parse(&format!("{}/FUZZ", server.url()).as_str())?;
+
         let fuzzer = HttpFuzzer::builder()
+            .with_url(url)
             .with_status_code_blacklist(vec![StatusCode::NOT_FOUND])
             .build()?;
 
-        let url = Url::parse(&format!("{}/FUZZ", server.url()).as_str())?;
-
-        match fuzzer.probe(&url, "non-existing").await? {
+        match fuzzer.probe("non-existing").await? {
             Some(r) => Err(format!("{:}", r).into()),
             None => Ok(())
         }
@@ -144,13 +148,14 @@ mod tests {
             .create_async()
             .await;
 
+        let url = Url::parse(&format!("{}/FUZZ", server.url()).as_str())?;
+
         let fuzzer = HttpFuzzer::builder()
+            .with_url(url)
             .with_exclude_length(ExcludeContentLength::Separate(vec!(35)))
             .build()?;
 
-        let url = Url::parse(&format!("{}/FUZZ", server.url()).as_str())?;
-
-        match fuzzer.probe(&url, "len").await? {
+        match fuzzer.probe("len").await? {
             Some(r) => Err(format!("{:}", r).into()),
             None => Ok(())
         }
@@ -164,13 +169,14 @@ mod tests {
             .create_async()
             .await;
 
+        let url = Url::parse(&format!("{}/do-fuzz", server.url()).as_str())?;
+
         let fuzzer = HttpFuzzer::builder()
+            .with_url(url)
             .with_headers(vec![(USER_AGENT, "FUZZ".parse()?)])
             .build()?;
 
-        let url = Url::parse(&format!("{}/do-fuzz", server.url()).as_str())?;
-
-        match fuzzer.probe(&url, "fill-to-header").await? {
+        match fuzzer.probe("fill-to-header").await? {
             Some(r) => {
                 Ok(assert_eq!(r.status_code, StatusCode::OK))
             }

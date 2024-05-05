@@ -21,12 +21,13 @@ async fn main() -> Result<(), Box<dyn Error>> {
                  exclude_length
              }) => {
             let fuzzer = fuzz::HttpFuzzer::builder()
+                .with_url(url.clone())
                 .with_method(method.clone())
                 .with_headers(headers.clone())
                 .with_status_code_blacklist(blacklist_status_codes.clone())
                 .with_exclude_length(exclude_length.clone())
                 .build()?;
-            fuzzer.brute_force(url, wordlist).await?;
+            fuzzer.brute_force(wordlist).await?;
             Ok(())
         }
         None => Err("no matching command".into())
