@@ -1,11 +1,9 @@
 # Rustbuster
 
-Imitation of Gobuster/ffuf, mainly to learn Rust.
+Imitation of Gobuster/ffuf in Rust
 
 ```
-Uses directory/file enumeration mode
-
-Usage: rustbuster dir [OPTIONS] --url <URL> --wordlist <WORDLIST>
+Usage: rustbuster [OPTIONS] --url <URL> --wordlist <WORDLIST>
 
 Options:
   -u, --url <URL>
@@ -22,10 +20,6 @@ Options:
           Custom headers; use the format "Header1: Content1, Header2: Content2"
   -h, --help
           Print help
+  -V, --version
+          Print version
 ```
-
-TODO:
-- [x] use FUZZ keyword in URL
-- [x] use FUZZ keyword in headers
-- [x] error if no FUZZ keyword found anywhere
-- [ ] remove dir mode -- default and not relevant for fuzzing

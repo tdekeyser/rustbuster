@@ -1,6 +1,6 @@
 use std::error::Error;
 
-use clap::{Parser, Subcommand};
+use clap::Parser;
 use reqwest::{Method, StatusCode};
 use reqwest::header::{HeaderName, HeaderValue};
 use url::Url;
@@ -11,38 +11,29 @@ use crate::exclude_length::ExcludeContentLength;
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
 pub struct Cli {
-    #[command(subcommand)]
-    pub command: Option<Command>,
-}
+    /// The target URL
+    #[arg(short, long)]
+    pub url: Url,
 
-#[derive(Subcommand)]
-pub enum Command {
-    /// Uses directory/file enumeration mode
-    Dir {
-        /// The target URL
-        #[arg(short, long)]
-        url: Url,
+    /// Path to the wordlist.
+    #[arg(short, long)]
+    pub wordlist: std::path::PathBuf,
 
-        /// Path to the wordlist.
-        #[arg(short, long)]
-        wordlist: std::path::PathBuf,
+    /// Use the following HTTP method (default "GET")
+    #[arg(short, long, default_value = "GET")]
+    pub method: Method,
 
-        /// Use the following HTTP method (default "GET")
-        #[arg(short, long, default_value = "GET")]
-        method: Method,
+    /// Status code that will be ignored, e.g. 404,500
+    #[arg(short, long, value_delimiter = ',', default_value = "404")]
+    pub blacklist_status_codes: Vec<StatusCode>,
 
-        /// Status code that will be ignored, e.g. 404,500
-        #[arg(short, long, value_delimiter = ',', default_value = "404")]
-        blacklist_status_codes: Vec<StatusCode>,
+    /// Content lengths that will be ignored, e.g. 20,300, or a range, e.g. 20-300
+    #[arg(long, default_value_t = ExcludeContentLength::Empty)]
+    pub exclude_length: ExcludeContentLength,
 
-        /// Content lengths that will be ignored, e.g. 20,300, or a range, e.g. 20-300
-        #[arg(long, default_value_t = ExcludeContentLength::Empty)]
-        exclude_length: ExcludeContentLength,
-
-        /// Custom headers; use the format "Header1: Content1, Header2: Content2"
-        #[arg(long, value_delimiter = ',', value_parser = parse_headers, required = false)]
-        headers: Vec<(HeaderName, HeaderValue)>,
-    }
+    /// Custom headers; use the format "Header1: Content1, Header2: Content2"
+    #[arg(long, value_delimiter = ',', value_parser = parse_headers, required = false)]
+    pub headers: Vec<(HeaderName, HeaderValue)>,
 }
 
 fn parse_headers(s: &str) -> Result<(HeaderName, HeaderValue), Box<dyn Error + Send + Sync + 'static>> {

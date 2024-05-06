@@ -42,7 +42,7 @@ impl HttpFuzzer {
         builder::HttpFuzzerBuilder::new()
     }
 
-    pub async fn brute_force(&self, wordlist: &PathBuf) -> Result<()> {
+    pub async fn brute_force(&self, wordlist: PathBuf) -> Result<()> {
         let wordlist = fs::read_to_string(wordlist).expect("file not found");
         let pb = progress_bar::new(wordlist.lines().count() as u64);
 
