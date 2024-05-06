@@ -5,7 +5,7 @@ use reqwest::header::{HeaderMap, HeaderName, HeaderValue, USER_AGENT};
 use url::Url;
 
 use crate::exclude_length::ExcludeContentLength;
-use crate::fuzz::{HttpFuzzer, Result};
+use crate::fuzz::{FUZZ, HttpFuzzer, Result};
 
 pub struct HttpFuzzerBuilder {
     url: Url,
@@ -52,7 +52,10 @@ impl HttpFuzzerBuilder {
     }
 
     fn validate(&self) -> Result<()> {
-        Err("no FUZZ keyword found".into())
+        match self.url.as_str().contains(FUZZ) || self.fuzzed_headers.iter().count() > 0 {
+            true => Ok(()),
+            false => Err("no FUZZ keyword found".into())
+        }
     }
 
     pub fn with_url(mut self, url: Url) -> HttpFuzzerBuilder {
