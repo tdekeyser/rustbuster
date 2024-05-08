@@ -7,11 +7,12 @@ use std::path::PathBuf;
 use reqwest::{Client, Method, StatusCode};
 use reqwest::header::{HeaderMap, HeaderName};
 use url::Url;
-
 use crate::exclude_length::ExcludeContentLength;
+
 use crate::progress_bar;
 
 mod builder;
+mod words;
 
 type Result<T> = std::result::Result<T, Box<dyn Error>>;
 
@@ -95,8 +96,8 @@ mod tests {
     use reqwest::StatusCode;
     use url::Url;
 
-    use crate::exclude_length::ExcludeContentLength;
     use crate::fuzz::{HttpFuzzer, Result};
+    use crate::exclude_length::ExcludeContentLength;
 
     #[tokio::test]
     async fn fuzzer_gets_response() -> Result<()> {

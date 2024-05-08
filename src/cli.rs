@@ -23,6 +23,10 @@ pub struct Cli {
     #[arg(short, long, default_value = "GET")]
     pub method: Method,
 
+    /// File extensions to search for, e.g. json,xml
+    #[arg(short = 'x', value_delimiter = ',', default_value = "")]
+    pub extensions: Vec<char>,
+
     /// Status code that will be ignored, e.g. 404,500
     #[arg(short, long, value_delimiter = ',', default_value = "404")]
     pub blacklist_status_codes: Vec<StatusCode>,

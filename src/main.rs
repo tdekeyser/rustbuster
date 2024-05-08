@@ -6,8 +6,8 @@ use crate::cli::Cli;
 
 mod cli;
 mod progress_bar;
-mod exclude_length;
 mod fuzz;
+mod exclude_length;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
