@@ -28,7 +28,7 @@ pub struct Cli {
     pub method: Method,
 
     /// Status code that will be ignored, e.g. 404,500
-    #[arg(short, long, value_delimiter = ',', default_value = "404")]
+    #[arg(long, value_delimiter = ',', default_value = "404")]
     pub filter_status_codes: Vec<StatusCode>,
 
     /// Content lengths that will be ignored, e.g. 20,300, or a range, e.g. 20-300
