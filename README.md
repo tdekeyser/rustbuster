@@ -10,11 +10,13 @@ Options:
           The target URL
   -w, --wordlist <WORDLIST>
           Path to the wordlist
+  -x <EXTENSIONS>
+          File extensions to search for, e.g. json,xml [default: ]
   -m, --method <METHOD>
           Use the following HTTP method (default "GET") [default: GET]
-  -b, --blacklist-status-codes <BLACKLIST_STATUS_CODES>
+  -f, --filter-status-codes <FILTER_STATUS_CODES>
           Status code that will be ignored, e.g. 404,500 [default: 404]
-      --exclude-length <EXCLUDE_LENGTH>
+      --filter-content-length <FILTER_CONTENT_LENGTH>
           Content lengths that will be ignored, e.g. 20,300, or a range, e.g. 20-300 [default: Empty]
       --headers <HEADERS>
           Custom headers; use the format "Header1: Content1, Header2: Content2"
