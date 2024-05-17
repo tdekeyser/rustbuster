@@ -4,14 +4,13 @@ use reqwest::{Client, Method, StatusCode};
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue, USER_AGENT};
 use url::Url;
 
-use crate::fuzz::{FUZZ, HttpFuzzer, Result};
 use crate::exclude_length::ExcludeContentLength;
+use crate::fuzz::{FUZZ, HttpFuzzer, Result};
 
 pub struct HttpFuzzerBuilder {
     url: Url,
     method: Method,
     headers: HeaderMap,
-    extensions: Vec<String>,
     status_code_blacklist: Vec<StatusCode>,
     exclude_length: ExcludeContentLength,
     fuzzed_headers: HashMap<String, String>,
@@ -26,7 +25,6 @@ impl HttpFuzzerBuilder {
             url: "http://localhost:8080/FUZZ".parse().unwrap(),
             headers,
             method: Method::GET,
-            extensions: Vec::new(),
             status_code_blacklist: Vec::new(),
             exclude_length: ExcludeContentLength::Empty,
             fuzzed_headers: HashMap::new(),
@@ -67,11 +65,6 @@ impl HttpFuzzerBuilder {
 
     pub fn with_method(mut self, method: Method) -> HttpFuzzerBuilder {
         self.method = method;
-        self
-    }
-
-    pub fn with_extensions(mut self, extensions: Vec<String>) -> HttpFuzzerBuilder {
-        self.extensions = extensions;
         self
     }
 

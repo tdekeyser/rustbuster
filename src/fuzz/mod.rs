@@ -1,18 +1,16 @@
 use std::collections::HashMap;
 use std::error::Error;
 use std::fmt::{Display, Formatter};
-use std::fs;
-use std::path::PathBuf;
 
 use reqwest::{Client, Method, StatusCode};
 use reqwest::header::{HeaderMap, HeaderName};
 use url::Url;
-use crate::exclude_length::ExcludeContentLength;
 
+use crate::exclude_length::ExcludeContentLength;
 use crate::progress_bar;
+use crate::words::Wordlist;
 
 mod builder;
-mod words;
 
 type Result<T> = std::result::Result<T, Box<dyn Error>>;
 
@@ -43,11 +41,10 @@ impl HttpFuzzer {
         builder::HttpFuzzerBuilder::new()
     }
 
-    pub async fn brute_force(&self, wordlist: PathBuf) -> Result<()> {
-        let wordlist = fs::read_to_string(wordlist).expect("file not found");
-        let pb = progress_bar::new(wordlist.lines().count() as u64);
+    pub async fn brute_force(&self, wordlist: Wordlist) -> Result<()> {
+        let pb = progress_bar::new(wordlist.len() as u64);
 
-        for word in wordlist.lines() {
+        for word in wordlist.iter() {
             pb.inc(1);
             match self.probe(word).await? {
                 Some(response) => pb.println(format!("/{:<30} {}", word, response)),
@@ -96,8 +93,8 @@ mod tests {
     use reqwest::StatusCode;
     use url::Url;
 
-    use crate::fuzz::{HttpFuzzer, Result};
     use crate::exclude_length::ExcludeContentLength;
+    use crate::fuzz::{HttpFuzzer, Result};
 
     #[tokio::test]
     async fn fuzzer_gets_response() -> Result<()> {

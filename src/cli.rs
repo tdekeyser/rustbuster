@@ -25,7 +25,7 @@ pub struct Cli {
 
     /// File extensions to search for, e.g. json,xml
     #[arg(short = 'x', value_delimiter = ',', default_value = "")]
-    pub extensions: Vec<char>,
+    pub extensions: Vec<String>,
 
     /// Status code that will be ignored, e.g. 404,500
     #[arg(short, long, value_delimiter = ',', default_value = "404")]
