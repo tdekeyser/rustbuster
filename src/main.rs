@@ -8,7 +8,6 @@ use crate::words::Wordlist;
 mod cli;
 mod progress_bar;
 mod fuzz;
-mod exclude_length;
 mod words;
 
 #[tokio::main]
@@ -22,8 +21,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .with_url(args.url)
         .with_method(args.method)
         .with_headers(args.headers)
-        .with_status_code_blacklist(args.blacklist_status_codes)
-        .with_exclude_length(args.exclude_length)
+        .with_status_code_blacklist(args.filter_status_codes)
+        .with_exclude_length(args.filter_content_length)
         .build()?;
 
     fuzzer.brute_force(wordlist).await

@@ -6,10 +6,11 @@ use reqwest::{Client, Method, StatusCode};
 use reqwest::header::{HeaderMap, HeaderName};
 use url::Url;
 
-use crate::exclude_length::ExcludeContentLength;
+use crate::fuzz::content_length::FilterContentLength;
 use crate::progress_bar;
 use crate::words::Wordlist;
 
+pub mod content_length;
 mod builder;
 
 type Result<T> = std::result::Result<T, Box<dyn Error>>;
@@ -32,7 +33,7 @@ pub struct HttpFuzzer {
     client: Client,
     method: Method,
     status_code_blacklist: Vec<StatusCode>,
-    exclude_length: ExcludeContentLength,
+    exclude_length: FilterContentLength,
     fuzzed_headers: HashMap<String, String>,
 }
 
@@ -93,8 +94,8 @@ mod tests {
     use reqwest::StatusCode;
     use url::Url;
 
-    use crate::exclude_length::ExcludeContentLength;
     use crate::fuzz::{HttpFuzzer, Result};
+    use crate::fuzz::content_length::FilterContentLength;
 
     #[tokio::test]
     async fn fuzzer_gets_response() -> Result<()> {
@@ -150,7 +151,7 @@ mod tests {
 
         let fuzzer = HttpFuzzer::builder()
             .with_url(url)
-            .with_exclude_length(ExcludeContentLength::Separate(vec!(35)))
+            .with_exclude_length(FilterContentLength::Separate(vec!(35)))
             .build()?;
 
         match fuzzer.probe("len").await? {

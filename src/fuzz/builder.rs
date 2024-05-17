@@ -4,15 +4,15 @@ use reqwest::{Client, Method, StatusCode};
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue, USER_AGENT};
 use url::Url;
 
-use crate::exclude_length::ExcludeContentLength;
 use crate::fuzz::{FUZZ, HttpFuzzer, Result};
+use crate::fuzz::content_length::FilterContentLength;
 
 pub struct HttpFuzzerBuilder {
     url: Url,
     method: Method,
     headers: HeaderMap,
     status_code_blacklist: Vec<StatusCode>,
-    exclude_length: ExcludeContentLength,
+    exclude_length: FilterContentLength,
     fuzzed_headers: HashMap<String, String>,
 }
 
@@ -26,7 +26,7 @@ impl HttpFuzzerBuilder {
             headers,
             method: Method::GET,
             status_code_blacklist: Vec::new(),
-            exclude_length: ExcludeContentLength::Empty,
+            exclude_length: FilterContentLength::Empty,
             fuzzed_headers: HashMap::new(),
         }
     }
@@ -87,7 +87,7 @@ impl HttpFuzzerBuilder {
         self
     }
 
-    pub fn with_exclude_length(mut self, exclude_length: ExcludeContentLength) -> HttpFuzzerBuilder {
+    pub fn with_exclude_length(mut self, exclude_length: FilterContentLength) -> HttpFuzzerBuilder {
         self.exclude_length = exclude_length;
         self
     }

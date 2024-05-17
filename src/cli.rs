@@ -5,7 +5,7 @@ use reqwest::{Method, StatusCode};
 use reqwest::header::{HeaderName, HeaderValue};
 use url::Url;
 
-use crate::exclude_length::ExcludeContentLength;
+use crate::fuzz::content_length::FilterContentLength;
 
 /// Imitation of Gobuster/ffuf in Rust.
 #[derive(Parser)]
@@ -19,21 +19,21 @@ pub struct Cli {
     #[arg(short, long)]
     pub wordlist: std::path::PathBuf,
 
-    /// Use the following HTTP method (default "GET")
-    #[arg(short, long, default_value = "GET")]
-    pub method: Method,
-
     /// File extensions to search for, e.g. json,xml
     #[arg(short = 'x', value_delimiter = ',', default_value = "")]
     pub extensions: Vec<String>,
 
+    /// Use the following HTTP method (default "GET")
+    #[arg(short, long, default_value = "GET")]
+    pub method: Method,
+
     /// Status code that will be ignored, e.g. 404,500
     #[arg(short, long, value_delimiter = ',', default_value = "404")]
-    pub blacklist_status_codes: Vec<StatusCode>,
+    pub filter_status_codes: Vec<StatusCode>,
 
     /// Content lengths that will be ignored, e.g. 20,300, or a range, e.g. 20-300
-    #[arg(long, default_value_t = ExcludeContentLength::Empty)]
-    pub exclude_length: ExcludeContentLength,
+    #[arg(long, default_value_t = FilterContentLength::Empty)]
+    pub filter_content_length: FilterContentLength,
 
     /// Custom headers; use the format "Header1: Content1, Header2: Content2"
     #[arg(long, value_delimiter = ',', value_parser = parse_headers, required = false)]
