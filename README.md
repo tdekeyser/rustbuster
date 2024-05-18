@@ -20,6 +20,8 @@ Options:
           Status code that will be ignored, e.g. 404,500 [default: 404]
       --filter-content-length <FILTER_CONTENT_LENGTH>
           Content lengths that will be ignored, e.g. 20,300, or a range, e.g. 20-300 [default: Empty]
+      --filter-body <FILTER_BODY>
+          Ignore if text appears in the response body [default: Empty]
   -h, --help
           Print help
   -V, --version
