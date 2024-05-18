@@ -20,7 +20,7 @@ pub struct Cli {
     pub wordlist: std::path::PathBuf,
 
     /// File extensions to search for, e.g. json,xml
-    #[arg(short = 'x', value_delimiter = ',', default_value = "")]
+    #[arg(short = 'x', long, value_delimiter = ',', default_value = "")]
     pub extensions: Vec<String>,
 
     /// Use the following HTTP method (default "GET")
