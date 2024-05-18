@@ -27,6 +27,10 @@ pub struct Cli {
     #[arg(short, long, default_value = "GET")]
     pub method: Method,
 
+    /// Custom headers; use the format "Header1: Content1, Header2: Content2"
+    #[arg(short = 'H', long, value_delimiter = ',', value_parser = parse_headers, required = false)]
+    pub headers: Vec<(HeaderName, HeaderValue)>,
+
     /// Status code that will be ignored, e.g. 404,500
     #[arg(long, value_delimiter = ',', default_value = "404")]
     pub filter_status_codes: Vec<StatusCode>,
@@ -34,10 +38,6 @@ pub struct Cli {
     /// Content lengths that will be ignored, e.g. 20,300, or a range, e.g. 20-300
     #[arg(long, default_value_t = FilterContentLength::Empty)]
     pub filter_content_length: FilterContentLength,
-
-    /// Custom headers; use the format "Header1: Content1, Header2: Content2"
-    #[arg(long, value_delimiter = ',', value_parser = parse_headers, required = false)]
-    pub headers: Vec<(HeaderName, HeaderValue)>,
 }
 
 fn parse_headers(s: &str) -> Result<(HeaderName, HeaderValue), Box<dyn Error + Send + Sync + 'static>> {
