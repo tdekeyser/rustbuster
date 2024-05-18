@@ -4,15 +4,17 @@ use reqwest::{Client, Method, StatusCode};
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue, USER_AGENT};
 use url::Url;
 
-use crate::fuzz::{FUZZ, HttpFuzzer, Result};
-use crate::fuzz::content_length::FilterContentLength;
+use crate::fuzz::{FUZZ, HttpFuzzer, HttpResponseFilters, Result};
+use crate::fuzz::filter_body::FilterBody;
+use crate::fuzz::filter_content_length::FilterContentLength;
 
 pub struct HttpFuzzerBuilder {
     url: Url,
     method: Method,
     headers: HeaderMap,
-    status_code_blacklist: Vec<StatusCode>,
-    exclude_length: FilterContentLength,
+    filter_status_codes: Vec<StatusCode>,
+    filter_content_length: FilterContentLength,
+    filter_body: FilterBody,
     fuzzed_headers: HashMap<String, String>,
 }
 
@@ -25,8 +27,9 @@ impl HttpFuzzerBuilder {
             url: "http://localhost:8080/FUZZ".parse().unwrap(),
             headers,
             method: Method::GET,
-            status_code_blacklist: Vec::new(),
-            exclude_length: FilterContentLength::Empty,
+            filter_status_codes: Vec::new(),
+            filter_content_length: FilterContentLength::Empty,
+            filter_body: FilterBody::Empty,
             fuzzed_headers: HashMap::new(),
         }
     }
@@ -42,8 +45,11 @@ impl HttpFuzzerBuilder {
                     url: self.url,
                     client,
                     method: self.method,
-                    status_code_blacklist: self.status_code_blacklist,
-                    exclude_length: self.exclude_length,
+                    response_filters: HttpResponseFilters {
+                        filter_status_codes: self.filter_status_codes,
+                        filter_content_length: self.filter_content_length,
+                        filter_body: self.filter_body,
+                    },
                     fuzzed_headers: self.fuzzed_headers,
                 })
             }
@@ -82,13 +88,18 @@ impl HttpFuzzerBuilder {
         self
     }
 
-    pub fn with_status_code_blacklist(mut self, blacklist: Vec<StatusCode>) -> HttpFuzzerBuilder {
-        self.status_code_blacklist = blacklist;
+    pub fn with_status_codes_filter(mut self, blacklist: Vec<StatusCode>) -> HttpFuzzerBuilder {
+        self.filter_status_codes = blacklist;
         self
     }
 
-    pub fn with_exclude_length(mut self, exclude_length: FilterContentLength) -> HttpFuzzerBuilder {
-        self.exclude_length = exclude_length;
+    pub fn with_content_length_filter(mut self, exclude_length: FilterContentLength) -> HttpFuzzerBuilder {
+        self.filter_content_length = exclude_length;
+        self
+    }
+
+    pub fn with_body_filter(mut self, filter_body: FilterBody) -> HttpFuzzerBuilder {
+        self.filter_body = filter_body;
         self
     }
 }

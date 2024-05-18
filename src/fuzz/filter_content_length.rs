@@ -54,7 +54,7 @@ impl FilterContentLength {
 
 #[cfg(test)]
 mod tests {
-    use crate::fuzz::content_length::FilterContentLength;
+    use crate::fuzz::filter_content_length::FilterContentLength;
 
     #[test]
     fn exclude_lengths_from_str_separate() {

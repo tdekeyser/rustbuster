@@ -5,7 +5,8 @@ use reqwest::{Method, StatusCode};
 use reqwest::header::{HeaderName, HeaderValue};
 use url::Url;
 
-use crate::fuzz::content_length::FilterContentLength;
+use crate::fuzz::filter_content_length::FilterContentLength;
+use crate::fuzz::filter_body::FilterBody;
 
 /// Imitation of Gobuster/ffuf in Rust.
 #[derive(Parser)]
@@ -34,6 +35,10 @@ pub struct Cli {
     /// Content lengths that will be ignored, e.g. 20,300, or a range, e.g. 20-300
     #[arg(long, default_value_t = FilterContentLength::Empty)]
     pub filter_content_length: FilterContentLength,
+
+    /// Ignore if text appears in the response body
+    #[arg(long, default_value_t = FilterBody::Empty)]
+    pub filter_body: FilterBody,
 
     /// Custom headers; use the format "Header1: Content1, Header2: Content2"
     #[arg(long, value_delimiter = ',', value_parser = parse_headers, required = false)]

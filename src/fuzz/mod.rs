@@ -6,11 +6,13 @@ use reqwest::{Client, Method, StatusCode};
 use reqwest::header::{HeaderMap, HeaderName};
 use url::Url;
 
-use crate::fuzz::content_length::FilterContentLength;
+use crate::fuzz::filter_body::FilterBody;
+use crate::fuzz::filter_content_length::FilterContentLength;
 use crate::progress_bar;
 use crate::words::Wordlist;
 
-pub mod content_length;
+pub mod filter_content_length;
+pub mod filter_body;
 mod builder;
 
 type Result<T> = std::result::Result<T, Box<dyn Error>>;
@@ -20,6 +22,7 @@ const FUZZ: &'static str = "FUZZ";
 struct HttpResponse {
     status_code: StatusCode,
     content_length: u32,
+    body: String,
 }
 
 impl Display for HttpResponse {
@@ -28,12 +31,37 @@ impl Display for HttpResponse {
     }
 }
 
+pub struct HttpResponseFilters {
+    filter_status_codes: Vec<StatusCode>,
+    filter_content_length: FilterContentLength,
+    filter_body: FilterBody,
+}
+
+impl HttpResponseFilters {
+    fn filter(&self, response: HttpResponse) -> Option<HttpResponse> {
+        let HttpResponse {
+            ref status_code,
+            content_length,
+            ref body
+        } = response;
+
+        let check = self.filter_status_codes.contains(status_code) ||
+            self.filter_content_length.matches(content_length) ||
+            self.filter_body.matches(body);
+
+        return match check {
+            true => None,
+            false => Some(response)
+        };
+    }
+}
+
+
 pub struct HttpFuzzer {
     url: Url,
     client: Client,
     method: Method,
-    status_code_blacklist: Vec<StatusCode>,
-    exclude_length: FilterContentLength,
+    response_filters: HttpResponseFilters,
     fuzzed_headers: HashMap<String, String>,
 }
 
@@ -66,13 +94,14 @@ impl HttpFuzzer {
             .await?;
 
         let status_code = response.status();
-        let content_length = response.text().await?.len() as u32;
+        let body = response.text().await?;
+        let content_length = body.len() as u32;
 
-        match self.status_code_blacklist.contains(&status_code) ||
-            self.exclude_length.matches(content_length) {
-            true => Ok(None),
-            false => Ok(Some(HttpResponse { status_code, content_length }))
-        }
+        Ok(self.response_filters.filter(HttpResponse {
+            status_code,
+            content_length,
+            body,
+        }))
     }
 
     fn replace_keyword_in_headers(&self, word: &str) -> Result<HeaderMap> {
@@ -95,7 +124,7 @@ mod tests {
     use url::Url;
 
     use crate::fuzz::{HttpFuzzer, Result};
-    use crate::fuzz::content_length::FilterContentLength;
+    use crate::fuzz::filter_content_length::FilterContentLength;
 
     #[tokio::test]
     async fn fuzzer_gets_response() -> Result<()> {
@@ -130,7 +159,7 @@ mod tests {
 
         let fuzzer = HttpFuzzer::builder()
             .with_url(url)
-            .with_status_code_blacklist(vec![StatusCode::NOT_FOUND])
+            .with_status_codes_filter(vec![StatusCode::NOT_FOUND])
             .build()?;
 
         match fuzzer.probe("non-existing").await? {
@@ -151,7 +180,7 @@ mod tests {
 
         let fuzzer = HttpFuzzer::builder()
             .with_url(url)
-            .with_exclude_length(FilterContentLength::Separate(vec!(35)))
+            .with_content_length_filter(FilterContentLength::Separate(vec!(35)))
             .build()?;
 
         match fuzzer.probe("len").await? {
