@@ -1,42 +1,47 @@
-use std::fs;
+use std::fs::File;
+use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
 
 use tokio::io;
 
 pub struct Wordlist {
-    words: Vec<String>,
+    filename: PathBuf,
+    extensions: Vec<String>,
 }
 
 impl TryFrom<PathBuf> for Wordlist {
     type Error = io::Error;
 
-    fn try_from(value: PathBuf) -> Result<Self, Self::Error> {
-        let words = fs::read_to_string(value)?
-            .lines()
-            .map(String::from)
-            .collect();
-
-        Ok(Wordlist { words })
+    fn try_from(filename: PathBuf) -> Result<Self, Self::Error> {
+        match filename.exists() {
+            true => Ok(Wordlist {
+                filename,
+                extensions: vec![String::default()],
+            }),
+            false => Err(io::Error::new(io::ErrorKind::NotFound, "file does not exist"))
+        }
     }
 }
 
 impl Wordlist {
-    pub fn expand(self, extensions: Vec<String>) -> Wordlist {
-        let words = self.words.iter()
-            .flat_map(|word| extensions.iter()
-                .map(|ext| format!("{}{}", word, ext))
-                .collect::<Vec<String>>())
+    pub fn set_extensions(&mut self, extensions: Vec<String>) {
+        self.extensions = extensions.iter()
+            .map(|ext| format!(".{}", ext))
             .collect();
+    }
 
-        Wordlist { words }
+    pub fn iter(&self) -> impl Iterator<Item=String> + '_ {
+        let file = File::open(&self.filename).expect("exists");
+
+        BufReader::new(file).lines()
+            .map(|w| w.unwrap_or_default())
+            .flat_map(move |w| self.extensions.iter()
+                .map(|ext| format!("{}{}", w, ext))
+                .collect::<Vec<String>>())
     }
 
     pub fn len(&self) -> usize {
-        self.words.iter().count()
-    }
-
-    pub fn iter(self: &Self) -> impl Iterator<Item=&String> {
-        self.words.iter()
+        self.iter().count()
     }
 }
 
@@ -51,15 +56,21 @@ mod tests {
     use crate::words::Wordlist;
 
     #[test]
-    fn wordlist_reads_from_file() -> Result<(), io::Error> {
-        let filename = "wordlist_reads_from_file.txt";
+    fn wordlist_can_iterate() -> Result<(), io::Error> {
+        let filename = "wordlist_can_iterate.txt";
         let mut file = File::create(filename)?;
         file.write_all(b"let\nme\nin")?;
 
         let wordlist = Wordlist::try_from(PathBuf::from(filename))?;
 
-        assert_eq!(wordlist.words, vec!["let", "me", "in"]);
         assert_eq!(wordlist.len(), 3);
+
+        let mut words = wordlist.iter();
+
+        assert_eq!(words.next(), Some("let".to_string()));
+        assert_eq!(words.next(), Some("me".to_string()));
+        assert_eq!(words.next(), Some("in".to_string()));
+        assert_eq!(words.next(), None);
 
         remove_file(filename)
     }
@@ -71,15 +82,19 @@ mod tests {
         file.write_all(b"let\nme\nin")?;
 
         let mut wordlist = Wordlist::try_from(PathBuf::from(filename))?;
-        wordlist = wordlist.expand(vec![".json".to_string(), ".xml".to_string()]);
+        wordlist.set_extensions(vec!["json".to_string(), "xml".to_string()]);
 
-        assert_eq!(wordlist.words,
-                   vec![
-                       "let.json", "let.xml",
-                       "me.json", "me.xml",
-                       "in.json", "in.xml",
-                   ]);
         assert_eq!(wordlist.len(), 6);
+
+        let mut words = wordlist.iter();
+
+        assert_eq!(words.next(), Some("let.json".to_string()));
+        assert_eq!(words.next(), Some("let.xml".to_string()));
+        assert_eq!(words.next(), Some("me.json".to_string()));
+        assert_eq!(words.next(), Some("me.xml".to_string()));
+        assert_eq!(words.next(), Some("in.json".to_string()));
+        assert_eq!(words.next(), Some("in.xml".to_string()));
+        assert_eq!(words.next(), None);
 
         remove_file(filename)
     }

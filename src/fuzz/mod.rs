@@ -75,7 +75,7 @@ impl HttpFuzzer {
 
         for word in wordlist.iter() {
             pb.inc(1);
-            match self.probe(word).await? {
+            match self.probe(&word).await? {
                 Some(response) => pb.println(format!("/{:<30} {}", word, response)),
                 None => ()
             }

@@ -14,8 +14,8 @@ mod words;
 async fn main() -> Result<(), Box<dyn Error>> {
     let args = Cli::parse();
 
-    let wordlist = Wordlist::try_from(args.wordlist)?
-        .expand(args.extensions);
+    let mut wordlist = Wordlist::try_from(args.wordlist)?;
+    wordlist.set_extensions(args.extensions);
 
     let fuzzer = fuzz::HttpFuzzer::builder()
         .with_url(args.url)
