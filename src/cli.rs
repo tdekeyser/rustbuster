@@ -23,7 +23,7 @@ pub struct Cli {
     #[arg(short = 'x', long, value_delimiter = ',', default_value = "")]
     pub extensions: Vec<String>,
 
-    /// Use the following HTTP method (default "GET")
+    /// Use the following HTTP method
     #[arg(short, long, default_value = "GET")]
     pub method: Method,
 
