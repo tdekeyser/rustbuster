@@ -5,8 +5,7 @@ use reqwest::header::{HeaderMap, HeaderName, HeaderValue, USER_AGENT};
 use url::Url;
 
 use crate::fuzz::{FUZZ, HttpFuzzer, HttpResponseFilters, Result};
-use crate::fuzz::filter_body::FilterBody;
-use crate::fuzz::filter_content_length::FilterContentLength;
+use crate::fuzz::filters::{FilterBody, FilterContentLength};
 
 pub struct HttpFuzzerBuilder {
     url: Url,

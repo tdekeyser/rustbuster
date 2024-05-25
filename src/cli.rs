@@ -5,8 +5,7 @@ use reqwest::{Method, StatusCode};
 use reqwest::header::{HeaderName, HeaderValue};
 use url::Url;
 
-use crate::fuzz::filter_content_length::FilterContentLength;
-use crate::fuzz::filter_body::FilterBody;
+use crate::fuzz::filters::{FilterBody, FilterContentLength};
 
 /// Imitation of Gobuster/ffuf in Rust.
 #[derive(Parser)]

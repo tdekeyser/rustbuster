@@ -6,14 +6,12 @@ use reqwest::{Client, Method, StatusCode};
 use reqwest::header::{HeaderMap, HeaderName};
 use url::Url;
 
-use crate::fuzz::filter_body::FilterBody;
-use crate::fuzz::filter_content_length::FilterContentLength;
-use crate::progress_bar;
+use crate::fuzz::filters::{FilterBody, FilterContentLength};
 use crate::words::Wordlist;
 
-pub mod filter_content_length;
-pub mod filter_body;
+pub mod filters;
 mod builder;
+mod progress_bar;
 
 type Result<T> = std::result::Result<T, Box<dyn Error>>;
 
@@ -55,7 +53,6 @@ impl HttpResponseFilters {
         };
     }
 }
-
 
 pub struct HttpFuzzer {
     url: Url,
@@ -124,7 +121,7 @@ mod tests {
     use url::Url;
 
     use crate::fuzz::{HttpFuzzer, Result};
-    use crate::fuzz::filter_content_length::FilterContentLength;
+    use crate::fuzz::filters::FilterContentLength;
 
     #[tokio::test]
     async fn fuzzer_gets_response() -> Result<()> {

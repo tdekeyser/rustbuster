@@ -6,7 +6,6 @@ use crate::cli::Cli;
 use crate::words::Wordlist;
 
 mod cli;
-mod progress_bar;
 mod fuzz;
 mod words;
 
