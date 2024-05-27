@@ -32,7 +32,7 @@ pub struct Cli {
     pub headers: Vec<(HeaderName, HeaderValue)>,
 
     /// Seconds of delay between requests, in seconds
-    #[arg(long, default_value_t = 0.0)]
+    #[arg(short, long, default_value_t = 0.0)]
     pub delay: f32,
 
     /// Status code that will be ignored, e.g. 404,500
