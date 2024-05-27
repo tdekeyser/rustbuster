@@ -16,6 +16,8 @@ Options:
           Use the following HTTP method [default: GET]
   -H, --headers <HEADERS>
           Custom headers; use the format "Header1: Content1, Header2: Content2"
+      --delay <DELAY>
+          Seconds of delay between requests, in seconds
       --filter-status-codes <FILTER_STATUS_CODES>
           Status code that will be ignored, e.g. 404,500 [default: 404]
       --filter-content-length <FILTER_CONTENT_LENGTH>
