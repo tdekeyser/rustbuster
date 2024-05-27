@@ -11,6 +11,7 @@ pub struct HttpFuzzerBuilder {
     url: Url,
     method: Method,
     headers: HeaderMap,
+    delay: Option<u64>,
     filter_status_codes: Vec<StatusCode>,
     filter_content_length: FilterContentLength,
     filter_body: FilterBody,
@@ -26,6 +27,7 @@ impl HttpFuzzerBuilder {
             url: "http://localhost:8080/FUZZ".parse().unwrap(),
             headers,
             method: Method::GET,
+            delay: None,
             filter_status_codes: Vec::new(),
             filter_content_length: FilterContentLength::Empty,
             filter_body: FilterBody::Empty,
@@ -44,6 +46,7 @@ impl HttpFuzzerBuilder {
                     url: self.url,
                     client,
                     method: self.method,
+                    delay: self.delay,
                     response_filters: HttpResponseFilters {
                         filter_status_codes: self.filter_status_codes,
                         filter_content_length: self.filter_content_length,
@@ -84,6 +87,14 @@ impl HttpFuzzerBuilder {
                 .map(|(k, v)| (k.clone().to_string(), String::from(v.clone().to_str().unwrap_or_default())))
                 .collect::<HashMap<String, String>>());
 
+        self
+    }
+
+    pub fn with_delay(mut self, delay: f32) -> HttpFuzzerBuilder {
+        self.delay = match delay {
+            0.0 => None,
+            _ => Some((delay * 1000.0) as u64)
+        };
         self
     }
 

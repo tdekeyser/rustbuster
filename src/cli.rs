@@ -31,6 +31,10 @@ pub struct Cli {
     #[arg(short = 'H', long, value_delimiter = ',', value_parser = parse_headers, required = false)]
     pub headers: Vec<(HeaderName, HeaderValue)>,
 
+    /// Seconds of delay between requests, in seconds
+    #[arg(long, default_value_t = 0.0)]
+    pub delay: f32,
+
     /// Status code that will be ignored, e.g. 404,500
     #[arg(long, value_delimiter = ',', default_value = "404")]
     pub filter_status_codes: Vec<StatusCode>,

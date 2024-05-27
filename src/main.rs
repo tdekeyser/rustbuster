@@ -20,6 +20,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .with_url(args.url)
         .with_method(args.method)
         .with_headers(args.headers)
+        .with_delay(args.delay)
         .with_status_codes_filter(args.filter_status_codes)
         .with_content_length_filter(args.filter_content_length)
         .with_body_filter(args.filter_body)

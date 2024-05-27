@@ -1,9 +1,11 @@
 use std::collections::HashMap;
 use std::error::Error;
 use std::fmt::{Display, Formatter};
+use std::time::Duration;
 
 use reqwest::{Client, Method, StatusCode};
 use reqwest::header::{HeaderMap, HeaderName};
+use tokio::time;
 use url::Url;
 
 use crate::fuzz::filters::{FilterBody, FilterContentLength};
@@ -58,6 +60,7 @@ pub struct HttpFuzzer {
     url: Url,
     client: Client,
     method: Method,
+    delay: Option<u64>,
     response_filters: HttpResponseFilters,
     fuzzed_headers: HashMap<String, String>,
 }
@@ -76,7 +79,12 @@ impl HttpFuzzer {
                 Some(response) => pb.println(format!("/{:<30} {}", word, response)),
                 None => ()
             }
+            match self.delay {
+                Some(delay) => time::sleep(Duration::from_millis(delay)).await,
+                None => ()
+            }
         }
+
         Ok(())
     }
 
