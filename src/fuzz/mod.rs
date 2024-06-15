@@ -7,10 +7,9 @@ use reqwest::header::{HeaderMap, HeaderName};
 use tokio::time;
 use url::Url;
 
-use crate::fuzz::filters::{FilterBody, FilterContentLength};
+use crate::filters::{FilterBody, FilterContentLength};
 use crate::words::Wordlist;
 
-pub mod filters;
 mod builder;
 mod progress_bar;
 
@@ -131,8 +130,8 @@ mod tests {
     use reqwest::StatusCode;
     use url::Url;
 
+    use crate::filters::FilterContentLength;
     use crate::fuzz::{HttpFuzzer, Result};
-    use crate::fuzz::filters::FilterContentLength;
 
     #[tokio::test]
     async fn fuzzer_gets_response() -> Result<()> {

@@ -85,7 +85,7 @@ impl Display for FilterBody {
 
 #[cfg(test)]
 mod tests {
-    use crate::fuzz::filters::FilterContentLength;
+    use crate::filters::FilterContentLength;
 
     #[test]
     fn exclude_lengths_from_str_separate() {

@@ -7,6 +7,7 @@ use crate::words::Wordlist;
 
 mod cli;
 mod fuzz;
+mod filters;
 mod words;
 
 #[tokio::main]
