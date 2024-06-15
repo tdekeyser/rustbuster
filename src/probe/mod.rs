@@ -31,7 +31,8 @@ impl HttpProbe {
             .request(self.method.clone(), &request_url)
             .headers(extra_headers)
             .send()
-            .await?;
+            .await
+            .map_err(|e| e.to_string())?;
 
         let status_code = response.status();
         let body = response.text().await.or::<reqwest::Error>(Ok("".to_string()))?;
