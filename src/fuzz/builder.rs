@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use reqwest::{Client, Method, StatusCode};
+use reqwest::{Client, Method, redirect, StatusCode};
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue, USER_AGENT};
 use url::Url;
 
@@ -42,6 +42,7 @@ impl HttpFuzzerBuilder {
             Ok(_) => {
                 let client = Client::builder()
                     .default_headers(self.headers)
+                    .redirect(redirect::Policy::none())
                     .build()?;
 
                 Ok(HttpFuzzer {
