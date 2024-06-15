@@ -21,7 +21,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .with_headers(args.headers)
         .build()?;
 
-    let filters = fuzz::ProbeResponseFilters::new(
+    let filters = filters::ProbeResponseFilters::new(
         args.filter_status_codes,
         args.filter_content_length,
         args.filter_body,
