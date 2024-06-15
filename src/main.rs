@@ -2,31 +2,37 @@ use std::error::Error;
 
 use clap::Parser;
 
-use crate::cli::Cli;
-use crate::words::Wordlist;
-
 mod cli;
 mod fuzz;
 mod filters;
 mod words;
+mod probe;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let args = Cli::parse();
+    let args = cli::Cli::parse();
 
-    let mut wordlist = Wordlist::try_from(args.wordlist)?;
+    let mut wordlist = words::Wordlist::try_from(args.wordlist)?;
     wordlist.set_extensions(args.extensions);
 
-    let fuzzer = fuzz::HttpFuzzer::builder()
+    let http_probe = probe::HttpProbe::builder()
         .with_url(args.url)
         .with_method(args.method)
         .with_headers(args.headers)
-        .with_delay(args.delay)
-        .with_status_codes_filter(args.filter_status_codes)
-        .with_content_length_filter(args.filter_content_length)
-        .with_body_filter(args.filter_body)
-        .with_verbose(args.verbose)
         .build()?;
+
+    let filters = fuzz::ProbeResponseFilters::new(
+        args.filter_status_codes,
+        args.filter_content_length,
+        args.filter_body,
+    );
+
+    let fuzzer = fuzz::HttpFuzzer::new(
+        http_probe,
+        filters,
+        args.delay,
+        args.verbose,
+    );
 
     fuzzer.brute_force(wordlist).await
 }
