@@ -26,7 +26,11 @@ impl TryFrom<PathBuf> for Wordlist {
 impl Wordlist {
     pub fn set_extensions(&mut self, extensions: Vec<String>) {
         self.extensions = extensions.iter()
-            .map(|ext| format!(".{}", ext))
+            .map(|ext| if ext.is_empty() {
+                String::new()
+            } else {
+                format!(".{}", ext)
+            })
             .collect();
     }
 

@@ -19,27 +19,29 @@ type Result<T> = std::result::Result<T, Box<dyn Error>>;
 
 const FUZZ: &'static str = "FUZZ";
 
-struct HttpResponse {
+struct ProbeResponse {
+    request_url: String,
     status_code: StatusCode,
     content_length: u32,
     body: String,
 }
 
-impl Display for HttpResponse {
+impl Display for ProbeResponse {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "({:>10}) [Size: {:?}]", self.status_code, self.content_length)
     }
 }
 
-pub struct HttpResponseFilters {
+pub struct ProbeResponseFilters {
     filter_status_codes: Vec<StatusCode>,
     filter_content_length: FilterContentLength,
     filter_body: FilterBody,
 }
 
-impl HttpResponseFilters {
-    fn filter(&self, response: HttpResponse) -> Option<HttpResponse> {
-        let HttpResponse {
+impl ProbeResponseFilters {
+    fn filter(&self, response: ProbeResponse) -> Option<ProbeResponse> {
+        let ProbeResponse {
+            request_url: ref _request_url,
             ref status_code,
             content_length,
             ref body
@@ -61,7 +63,7 @@ pub struct HttpFuzzer {
     client: Client,
     method: Method,
     delay: Option<u64>,
-    response_filters: HttpResponseFilters,
+    response_filters: ProbeResponseFilters,
     fuzzed_headers: HashMap<String, String>,
 }
 
@@ -76,7 +78,7 @@ impl HttpFuzzer {
         for word in wordlist.iter() {
             pb.inc(1);
             match self.probe(&word).await? {
-                Some(response) => pb.println(format!("/{:<30} {}", word, response)),
+                Some(response) => pb.println(format!("{}", response.request_url)),
                 None => ()
             }
             match self.delay {
@@ -88,21 +90,22 @@ impl HttpFuzzer {
         Ok(())
     }
 
-    async fn probe(&self, word: &str) -> Result<Option<HttpResponse>> {
+    async fn probe(&self, word: &str) -> Result<Option<ProbeResponse>> {
         let request_url = self.url.as_str().replace(FUZZ, word);
         let extra_headers = self.replace_keyword_in_headers(word)?;
 
         let response = self.client
-            .request(self.method.clone(), request_url)
+            .request(self.method.clone(), &request_url)
             .headers(extra_headers)
             .send()
             .await?;
 
         let status_code = response.status();
-        let body = response.text().await?;
+        let body = response.text().await.or::<reqwest::Error>(Ok("".to_string()))?;
         let content_length = body.len() as u32;
 
-        Ok(self.response_filters.filter(HttpResponse {
+        Ok(self.response_filters.filter(ProbeResponse {
+            request_url,
             status_code,
             content_length,
             body,

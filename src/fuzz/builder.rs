@@ -4,7 +4,7 @@ use reqwest::{Client, Method, StatusCode};
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue, USER_AGENT};
 use url::Url;
 
-use crate::fuzz::{FUZZ, HttpFuzzer, HttpResponseFilters, Result};
+use crate::fuzz::{FUZZ, HttpFuzzer, ProbeResponseFilters, Result};
 use crate::fuzz::filters::{FilterBody, FilterContentLength};
 
 pub struct HttpFuzzerBuilder {
@@ -47,7 +47,7 @@ impl HttpFuzzerBuilder {
                     client,
                     method: self.method,
                     delay: self.delay,
-                    response_filters: HttpResponseFilters {
+                    response_filters: ProbeResponseFilters {
                         filter_status_codes: self.filter_status_codes,
                         filter_content_length: self.filter_content_length,
                         filter_body: self.filter_body,
