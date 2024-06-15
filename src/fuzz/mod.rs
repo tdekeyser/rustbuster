@@ -40,18 +40,11 @@ pub struct ProbeResponseFilters {
 
 impl ProbeResponseFilters {
     fn filter(&self, response: ProbeResponse) -> Option<ProbeResponse> {
-        let ProbeResponse {
-            request_url: ref _request_url,
-            ref status_code,
-            content_length,
-            ref body
-        } = response;
+        let ignore_response = self.filter_status_codes.contains(&response.status_code) ||
+            self.filter_content_length.matches(response.content_length) ||
+            self.filter_body.matches(&response.body);
 
-        let check = self.filter_status_codes.contains(status_code) ||
-            self.filter_content_length.matches(content_length) ||
-            self.filter_body.matches(body);
-
-        return match check {
+        return match ignore_response {
             true => None,
             false => Some(response)
         };
@@ -78,7 +71,7 @@ impl HttpFuzzer {
         for word in wordlist.iter() {
             pb.inc(1);
             match self.probe(&word).await? {
-                Some(response) => pb.println(format!("{}", response.request_url)),
+                Some(response) => pb.suspend(|| println!("{}", response.request_url)),
                 None => ()
             }
             match self.delay {
