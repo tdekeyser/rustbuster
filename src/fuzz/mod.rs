@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 use std::error::Error;
-use std::fmt::{Display, Formatter};
 use std::time::Duration;
 
 use reqwest::{Client, Method, StatusCode};
@@ -19,17 +18,12 @@ type Result<T> = std::result::Result<T, Box<dyn Error>>;
 
 const FUZZ: &'static str = "FUZZ";
 
+#[derive(Debug)]
 struct ProbeResponse {
     request_url: String,
     status_code: StatusCode,
     content_length: u32,
     body: String,
-}
-
-impl Display for ProbeResponse {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "({:>10}) [Size: {:?}]", self.status_code, self.content_length)
-    }
 }
 
 pub struct ProbeResponseFilters {
@@ -58,6 +52,7 @@ pub struct HttpFuzzer {
     delay: Option<u64>,
     response_filters: ProbeResponseFilters,
     fuzzed_headers: HashMap<String, String>,
+    verbose: bool,
 }
 
 impl HttpFuzzer {
@@ -71,7 +66,7 @@ impl HttpFuzzer {
         for word in wordlist.iter() {
             pb.inc(1);
             match self.probe(&word).await? {
-                Some(response) => pb.suspend(|| println!("{}", response.request_url)),
+                Some(response) => pb.suspend(|| self.print(response)),
                 None => ()
             }
             match self.delay {
@@ -81,6 +76,18 @@ impl HttpFuzzer {
         }
 
         Ok(())
+    }
+
+    fn print(&self, response: ProbeResponse) {
+        match self.verbose {
+            true => println!("{:<30} ({:>10}) [Size: {:?}]",
+                             Url::parse(response.request_url.as_str())
+                                 .map(|u| u.path().to_owned())
+                                 .unwrap_or_default(),
+                             response.status_code,
+                             response.content_length),
+            false => println!("{}", response.request_url),
+        }
     }
 
     async fn probe(&self, word: &str) -> Result<Option<ProbeResponse>> {
@@ -164,7 +171,7 @@ mod tests {
             .build()?;
 
         match fuzzer.probe("non-existing").await? {
-            Some(r) => Err(format!("{:}", r).into()),
+            Some(r) => Err(format!("{:?}", r).into()),
             None => Ok(())
         }
     }
@@ -185,7 +192,7 @@ mod tests {
             .build()?;
 
         match fuzzer.probe("len").await? {
-            Some(r) => Err(format!("{:}", r).into()),
+            Some(r) => Err(format!("{:?}", r).into()),
             None => Ok(())
         }
     }

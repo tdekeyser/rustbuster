@@ -16,6 +16,7 @@ pub struct HttpFuzzerBuilder {
     filter_content_length: FilterContentLength,
     filter_body: FilterBody,
     fuzzed_headers: HashMap<String, String>,
+    verbose: bool,
 }
 
 impl HttpFuzzerBuilder {
@@ -32,6 +33,7 @@ impl HttpFuzzerBuilder {
             filter_content_length: FilterContentLength::Empty,
             filter_body: FilterBody::Empty,
             fuzzed_headers: HashMap::new(),
+            verbose: false,
         }
     }
 
@@ -53,6 +55,7 @@ impl HttpFuzzerBuilder {
                         filter_body: self.filter_body,
                     },
                     fuzzed_headers: self.fuzzed_headers,
+                    verbose: self.verbose,
                 })
             }
             Err(e) => Err(e)
@@ -110,6 +113,11 @@ impl HttpFuzzerBuilder {
 
     pub fn with_body_filter(mut self, filter_body: FilterBody) -> HttpFuzzerBuilder {
         self.filter_body = filter_body;
+        self
+    }
+
+    pub fn with_verbose(mut self, verbose: bool) -> HttpFuzzerBuilder {
+        self.verbose = verbose;
         self
     }
 }

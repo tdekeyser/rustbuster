@@ -46,6 +46,10 @@ pub struct Cli {
     /// Ignore if text appears in the response body
     #[arg(long, default_value_t = FilterBody::Empty)]
     pub filter_body: FilterBody,
+
+    /// Verbose output including response status code, content length, etc.
+    #[arg(short, long)]
+    pub verbose: bool,
 }
 
 fn parse_headers(s: &str) -> Result<(HeaderName, HeaderValue), Box<dyn Error + Send + Sync + 'static>> {

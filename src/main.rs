@@ -24,6 +24,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .with_status_codes_filter(args.filter_status_codes)
         .with_content_length_filter(args.filter_content_length)
         .with_body_filter(args.filter_body)
+        .with_verbose(args.verbose)
         .build()?;
 
     fuzzer.brute_force(wordlist).await
