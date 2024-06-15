@@ -24,6 +24,8 @@ Options:
           Content lengths that will be ignored, e.g. 20,300, or a range, e.g. 20-300 [default: Empty]
       --filter-body <FILTER_BODY>
           Ignore if text appears in the response body [default: Empty]
+  -v, --verbose
+          Verbose output including response status code, content length, etc
   -h, --help
           Print help
   -V, --version
