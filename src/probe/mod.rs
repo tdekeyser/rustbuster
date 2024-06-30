@@ -31,11 +31,10 @@ impl HttpProbe {
             .request(self.method.clone(), &request_url)
             .headers(extra_headers)
             .send()
-            .await
-            .map_err(|e| e.to_string())?;
+            .await?;
 
         let status_code = response.status();
-        let body = response.text().await.or::<reqwest::Error>(Ok("".to_string()))?;
+        let body = response.text().await.ok().unwrap_or_default();
         let content_length = body.len() as u32;
 
         Ok(ProbeResponse {
@@ -78,7 +77,7 @@ impl ProbeResponse {
                            self.status_code,
                            self.content_length);
         }
-        format!("{}", self.request_url)
+        self.request_url.clone()
     }
 }
 
