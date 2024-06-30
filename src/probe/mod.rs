@@ -1,11 +1,11 @@
 use std::collections::HashMap;
-use std::error::Error;
 
 use reqwest::{Client, Method, StatusCode};
 use reqwest::header::{HeaderMap, HeaderName};
-use url::Url;
+use reqwest::Url;
 
 use crate::probe::builder::HttpProbeBuilder;
+use crate::Result;
 
 pub mod builder;
 
@@ -23,7 +23,7 @@ impl HttpProbe {
         HttpProbeBuilder::new()
     }
 
-    pub async fn probe(&self, word: &str) -> Result<ProbeResponse, Box<dyn Error>> {
+    pub async fn probe(&self, word: &str) -> Result<ProbeResponse> {
         let request_url = self.url.as_str().replace(FUZZ, word);
         let extra_headers = self.replace_keyword_in_headers(word)?;
 
@@ -46,7 +46,7 @@ impl HttpProbe {
         })
     }
 
-    fn replace_keyword_in_headers(&self, word: &str) -> Result<HeaderMap, Box<dyn Error>> {
+    fn replace_keyword_in_headers(&self, word: &str) -> Result<HeaderMap> {
         let mut headers = HeaderMap::new();
 
         for (k, v) in self.fuzzed_headers.iter() {
@@ -85,23 +85,22 @@ impl ProbeResponse {
 
 #[cfg(test)]
 mod tests {
-    use std::error::Error;
-
     use reqwest::header::USER_AGENT;
     use reqwest::StatusCode;
-    use url::Url;
+    use reqwest::Url;
 
     use crate::probe::HttpProbe;
+    use crate::Result;
 
     #[tokio::test]
-    async fn fuzzer_gets_response() -> Result<(), Box<dyn Error>> {
+    async fn fuzzer_gets_response() -> Result<()> {
         let mut server = mockito::Server::new_async().await;
         server.mock("GET", "/hello")
             .with_status(200)
             .with_body("hello")
             .create_async().await;
 
-        let url = Url::parse(&format!("{}/FUZZ", server.url()).as_str())?;
+        let url = Url::parse(&format!("{}/FUZZ", server.url()).as_str()).unwrap();
 
         let fuzzer = HttpProbe::builder()
             .with_url(url)
@@ -115,14 +114,14 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn fuzzer_keyword_in_headers() -> Result<(), Box<dyn Error>> {
+    async fn fuzzer_keyword_in_headers() -> Result<()> {
         let mut server = mockito::Server::new_async().await;
         server.mock("GET", "/do-fuzz")
             .match_header(USER_AGENT.as_str(), "fill-to-header")
             .create_async()
             .await;
 
-        let url = Url::parse(&format!("{}/do-fuzz", server.url()).as_str())?;
+        let url = Url::parse(&format!("{}/do-fuzz", server.url()).as_str()).unwrap();
 
         let fuzzer = HttpProbe::builder()
             .with_url(url)

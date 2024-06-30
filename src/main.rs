@@ -1,15 +1,16 @@
-use std::error::Error;
-
 use clap::Parser;
+
+pub use self::error::{Error, Result};
 
 mod cli;
 mod fuzz;
 mod filters;
 mod words;
 mod probe;
+mod error;
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
+async fn main() -> Result<()> {
     let args = cli::Cli::parse();
 
     let mut wordlist = words::Wordlist::try_from(args.wordlist)?;

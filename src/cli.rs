@@ -3,7 +3,7 @@ use std::error::Error;
 use clap::Parser;
 use reqwest::{Method, StatusCode};
 use reqwest::header::{HeaderName, HeaderValue};
-use url::Url;
+use reqwest::Url;
 
 use crate::filters::{FilterBody, FilterContentLength};
 

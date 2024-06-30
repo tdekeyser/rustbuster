@@ -1,10 +1,10 @@
-use std::error::Error;
 use std::time::Duration;
 
 use tokio::time;
 
 use crate::filters::ProbeResponseFilters;
 use crate::probe::HttpProbe;
+use crate::Result;
 use crate::words::Wordlist;
 
 mod progress_bar;
@@ -28,7 +28,7 @@ impl HttpFuzzer {
         Self { http_probe, filters, delay, verbose }
     }
 
-    pub async fn brute_force(&self, wordlist: Wordlist) -> Result<(), Box<dyn Error>> {
+    pub async fn brute_force(&self, wordlist: Wordlist) -> Result<()> {
         let pb = progress_bar::new(wordlist.len() as u64);
 
         for word in wordlist.iter() {

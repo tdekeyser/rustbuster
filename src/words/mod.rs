@@ -2,7 +2,7 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
 
-use tokio::io;
+use crate::{Error, Result};
 
 pub struct Wordlist {
     filename: PathBuf,
@@ -10,16 +10,17 @@ pub struct Wordlist {
 }
 
 impl TryFrom<PathBuf> for Wordlist {
-    type Error = io::Error;
+    type Error = Error;
 
-    fn try_from(filename: PathBuf) -> Result<Self, Self::Error> {
-        match filename.exists() {
-            true => Ok(Wordlist {
-                filename,
-                extensions: vec![String::default()],
-            }),
-            false => Err(io::Error::new(io::ErrorKind::NotFound, "file does not exist"))
+    fn try_from(filename: PathBuf) -> Result<Self> {
+        if !filename.exists() {
+            return Err(std::io::Error::new(std::io::ErrorKind::NotFound, "file not found").into());
         }
+
+        Ok(Wordlist {
+            filename,
+            extensions: vec![String::default()],
+        })
     }
 }
 
@@ -29,7 +30,7 @@ impl Wordlist {
             .map(|ext| if ext.is_empty() {
                 String::new()
             } else {
-                format!(".{}", ext)
+                format!(".{ext}")
             })
             .collect();
     }
@@ -40,7 +41,7 @@ impl Wordlist {
         BufReader::new(file).lines()
             .map(|w| w.unwrap_or_default())
             .flat_map(move |w| self.extensions.iter()
-                .map(|ext| format!("{}{}", w, ext))
+                .map(|ext| format!("{w}{ext}"))
                 .collect::<Vec<String>>())
     }
 
@@ -53,14 +54,14 @@ impl Wordlist {
 #[cfg(test)]
 mod tests {
     use std::fs::{File, remove_file};
-    use std::io;
     use std::io::prelude::*;
     use std::path::PathBuf;
 
+    use crate::Result;
     use crate::words::Wordlist;
 
     #[test]
-    fn wordlist_can_iterate() -> Result<(), io::Error> {
+    fn wordlist_can_iterate() -> Result<()> {
         let filename = "wordlist_can_iterate.txt";
         let mut file = File::create(filename)?;
         file.write_all(b"let\nme\nin")?;
@@ -76,11 +77,11 @@ mod tests {
         assert_eq!(words.next(), Some("in".to_string()));
         assert_eq!(words.next(), None);
 
-        remove_file(filename)
+        remove_file(filename).map_err(|e| e.into())
     }
 
     #[test]
-    fn wordlist_expands_from_extensions() -> Result<(), io::Error> {
+    fn wordlist_expands_from_extensions() -> Result<()> {
         let filename = "wordlist_expands_from_extensions.txt";
         let mut file = File::create(filename)?;
         file.write_all(b"let\nme\nin")?;
@@ -100,6 +101,6 @@ mod tests {
         assert_eq!(words.next(), Some("in.xml".to_string()));
         assert_eq!(words.next(), None);
 
-        remove_file(filename)
+        remove_file(filename).map_err(|e| e.into())
     }
 }

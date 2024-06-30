@@ -1,10 +1,10 @@
 use std::collections::HashMap;
-use std::error::Error;
 
 use reqwest::{Client, Method, redirect};
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue, USER_AGENT};
-use url::Url;
+use reqwest::Url;
 
+use crate::{Error, Result};
 use crate::probe::{FUZZ, HttpProbe};
 
 pub struct HttpProbeBuilder {
@@ -27,7 +27,7 @@ impl HttpProbeBuilder {
         }
     }
 
-    pub fn build(self) -> Result<HttpProbe, Box<dyn Error>> {
+    pub fn build(self) -> Result<HttpProbe> {
         self.validate()?;
 
         let client = Client::builder()
@@ -43,10 +43,10 @@ impl HttpProbeBuilder {
         })
     }
 
-    fn validate(&self) -> Result<(), Box<dyn Error>> {
+    fn validate(&self) -> Result<()> {
         match self.url.as_str().contains(FUZZ) || self.fuzzed_headers.iter().count() > 0 {
             true => Ok(()),
-            false => Err("no FUZZ keyword found".into())
+            false => Err(Error::FuzzKeywordNotFound)
         }
     }
 
@@ -86,12 +86,14 @@ mod tests {
     #[test]
     fn error_when_no_fuzz_keyword_found() -> Result<(), Box<dyn Error>> {
         match HttpProbe::builder()
-            .with_url("http://localhost:9999".parse().unwrap())
+            .with_url("http://localhost:9999".parse()?)
             .build() {
             Ok(_) => Err("not supposed to succeed".into()),
             Err(e) => {
-                assert!(e.to_string().contains("no FUZZ keyword found"));
-                Ok(())
+                match e {
+                    crate::Error::FuzzKeywordNotFound => Ok(()),
+                    _ => Err("wrong error type".into())
+                }
             }
         }
     }
