@@ -12,7 +12,7 @@ mod progress_bar;
 pub struct HttpFuzzer {
     http_probe: HttpProbe,
     filters: ProbeResponseFilters,
-    delay: Option<u64>,
+    delay: Option<Duration>,
     verbose: bool,
 }
 
@@ -21,10 +21,7 @@ impl HttpFuzzer {
                filters: ProbeResponseFilters,
                delay: f32,
                verbose: bool) -> Self {
-        let delay = match delay {
-            0.0 => None,
-            _ => Some((delay * 1000.0) as u64)
-        };
+        let delay = if delay != 0.0 { Some(Duration::from_secs_f32(delay)) } else { None };
         Self { http_probe, filters, delay, verbose }
     }
 
@@ -40,9 +37,8 @@ impl HttpFuzzer {
                 pb.suspend(|| println!("{}", response.display(self.verbose)))
             }
 
-            match self.delay {
-                Some(delay) => time::sleep(Duration::from_millis(delay)).await,
-                None => ()
+            if let Some(delay) = self.delay {
+                time::sleep(delay).await;
             }
         }
 
