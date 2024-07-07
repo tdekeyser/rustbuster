@@ -22,6 +22,9 @@ pub enum Error {
 
     #[from]
     HttpHeaderValueInvalid(reqwest::header::InvalidHeaderValue),
+
+    #[from]
+    BruteForceError(tokio::task::JoinError)
 }
 
 impl From<&str> for Error {

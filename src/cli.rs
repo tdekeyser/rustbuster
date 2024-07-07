@@ -3,7 +3,6 @@ use std::error::Error;
 use clap::Parser;
 use reqwest::{Method, StatusCode};
 use reqwest::header::{HeaderName, HeaderValue};
-use reqwest::Url;
 
 use crate::filters::{FilterBody, FilterContentLength};
 
@@ -13,7 +12,7 @@ use crate::filters::{FilterBody, FilterContentLength};
 pub struct Cli {
     /// The target URL
     #[arg(short, long)]
-    pub url: Url,
+    pub url: String,
 
     /// Path to the wordlist.
     #[arg(short, long)]
@@ -34,6 +33,10 @@ pub struct Cli {
     /// Seconds of delay between requests, in seconds
     #[arg(short, long, default_value_t = 0.0)]
     pub delay: f32,
+
+    /// Number of threads, default 10.
+    #[arg(short, long, default_value_t = 10)]
+    pub threads: usize,
 
     /// Status code that will be ignored, e.g. 404,500
     #[arg(long, value_delimiter = ',', default_value = "404")]

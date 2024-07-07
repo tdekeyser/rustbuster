@@ -2,13 +2,11 @@ use std::collections::HashMap;
 
 use reqwest::{Client, Method, redirect};
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue, USER_AGENT};
-use reqwest::Url;
-
 use crate::{Error, Result};
 use crate::probe::{FUZZ, HttpProbe};
 
 pub struct HttpProbeBuilder {
-    url: Url,
+    url: String,
     method: Method,
     headers: HeaderMap,
     fuzzed_headers: HashMap<String, String>,
@@ -44,13 +42,13 @@ impl HttpProbeBuilder {
     }
 
     fn validate(&self) -> Result<()> {
-        match self.url.as_str().contains(FUZZ) || self.fuzzed_headers.iter().count() > 0 {
+        match self.url.contains(FUZZ) || self.fuzzed_headers.iter().count() > 0 {
             true => Ok(()),
             false => Err(Error::FuzzKeywordNotFound)
         }
     }
 
-    pub fn with_url(mut self, url: Url) -> HttpProbeBuilder {
+    pub fn with_url(mut self, url: String) -> HttpProbeBuilder {
         self.url = url;
         self
     }
@@ -77,16 +75,15 @@ impl HttpProbeBuilder {
 
 #[cfg(test)]
 mod tests {
-    use std::error::Error;
-
     use reqwest::header::{COOKIE, USER_AGENT};
 
     use crate::probe::HttpProbe;
+    use crate::Result;
 
     #[test]
-    fn error_when_no_fuzz_keyword_found() -> Result<(), Box<dyn Error>> {
+    fn error_when_no_fuzz_keyword_found() -> Result<()> {
         match HttpProbe::builder()
-            .with_url("http://localhost:9999".parse()?)
+            .with_url("http://localhost:9999".parse().unwrap())
             .build() {
             Ok(_) => Err("not supposed to succeed".into()),
             Err(e) => {
@@ -99,7 +96,27 @@ mod tests {
     }
 
     #[test]
-    fn headers_containing_fuzz_are_fuzzed_headers() -> Result<(), Box<dyn Error>> {
+    fn no_error_when_fuzz_keyword_found() -> Result<()> {
+        match HttpProbe::builder()
+            .with_url("http://FUZZ.localhost:9999".parse().unwrap())
+            .build() {
+            Ok(_) => Ok(()),
+            Err(e) => Err(e)
+        }
+    }
+
+    #[test]
+    fn no_error_when_fuzz_keyword_found_in_dir() -> Result<()> {
+        match HttpProbe::builder()
+            .with_url("http://localhost:9999/FUZZ".parse().unwrap())
+            .build() {
+            Ok(_) => Ok(()),
+            Err(e) => Err(e)
+        }
+    }
+
+    #[test]
+    fn headers_containing_fuzz_are_fuzzed_headers() -> Result<()> {
         let builder = HttpProbe::builder()
             .with_headers(vec![
                 (USER_AGENT, "hello".parse()?),

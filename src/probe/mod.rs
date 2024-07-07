@@ -11,8 +11,9 @@ pub mod builder;
 
 const FUZZ: &'static str = "FUZZ";
 
+#[derive(Clone)]
 pub struct HttpProbe {
-    url: Url,
+    url: String,
     client: Client,
     method: Method,
     fuzzed_headers: HashMap<String, String>,
@@ -86,7 +87,6 @@ impl ProbeResponse {
 mod tests {
     use reqwest::header::USER_AGENT;
     use reqwest::StatusCode;
-    use reqwest::Url;
 
     use crate::probe::HttpProbe;
     use crate::Result;
@@ -99,7 +99,7 @@ mod tests {
             .with_body("hello")
             .create_async().await;
 
-        let url = Url::parse(&format!("{}/FUZZ", server.url()).as_str()).unwrap();
+        let url = format!("{}/FUZZ", server.url());
 
         let fuzzer = HttpProbe::builder()
             .with_url(url)
@@ -120,7 +120,7 @@ mod tests {
             .create_async()
             .await;
 
-        let url = Url::parse(&format!("{}/do-fuzz", server.url()).as_str()).unwrap();
+        let url = format!("{}/do-fuzz", server.url());
 
         let fuzzer = HttpProbe::builder()
             .with_url(url)

@@ -32,6 +32,7 @@ async fn main() -> Result<()> {
         http_probe,
         filters,
         args.delay,
+        args.threads,
         args.verbose,
     );
 

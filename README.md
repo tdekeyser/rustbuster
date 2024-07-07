@@ -31,3 +31,8 @@ Options:
   -V, --version
           Print version
 ```
+
+## TODO
+
+[ ] Vhost lookup does not work: `rustbuster --url http://FUZZ.permx.htb --wordlist vhosts.txt` 
+[ ] improve performance using multi-threading
