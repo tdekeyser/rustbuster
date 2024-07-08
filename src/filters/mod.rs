@@ -4,7 +4,6 @@ use reqwest::StatusCode;
 
 use crate::probe::ProbeResponse;
 
-#[derive(Clone)]
 pub struct ProbeResponseFilters {
     filter_status_codes: Vec<StatusCode>,
     filter_content_length: FilterContentLength,

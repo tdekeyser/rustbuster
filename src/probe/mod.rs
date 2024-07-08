@@ -11,7 +11,6 @@ pub mod builder;
 
 const FUZZ: &'static str = "FUZZ";
 
-#[derive(Clone)]
 pub struct HttpProbe {
     url: String,
     client: Client,
@@ -25,7 +24,7 @@ impl HttpProbe {
     }
 
     pub async fn probe(&self, word: &str) -> Result<ProbeResponse> {
-        let request_url = self.url.as_str().replace(FUZZ, word);
+        let request_url = self.url.replace(FUZZ, word);
         let extra_headers = self.replace_keyword_in_headers(word)?;
 
         let response = self.client

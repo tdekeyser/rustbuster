@@ -12,8 +12,8 @@ use crate::words::Wordlist;
 mod progress_bar;
 
 pub struct HttpFuzzer {
-    http_probe: HttpProbe,
-    filters: ProbeResponseFilters,
+    http_probe: Arc<HttpProbe>,
+    filters: Arc<ProbeResponseFilters>,
     delay: Option<Duration>,
     num_threads: usize,
     verbose: bool,
@@ -25,8 +25,13 @@ impl HttpFuzzer {
                delay: f32,
                num_threads: usize,
                verbose: bool) -> Self {
-        let delay = if delay != 0.0 { Some(Duration::from_secs_f32(delay)) } else { None };
-        Self { http_probe, filters, delay, num_threads, verbose }
+        Self {
+            http_probe: Arc::new(http_probe),
+            filters: Arc::new(filters),
+            delay: if delay != 0.0 { Some(Duration::from_secs_f32(delay)) } else { None },
+            num_threads,
+            verbose,
+        }
     }
 
     pub async fn brute_force(&self, wordlist: Wordlist) -> Result<()> {
@@ -38,9 +43,8 @@ impl HttpFuzzer {
         for word in wordlist.iter() {
             let pb = Arc::clone(&pb);
             let semaphore = Arc::clone(&semaphore);
-
-            let http_probe = self.http_probe.clone();
-            let filters = self.filters.clone();
+            let http_probe = Arc::clone(&self.http_probe);
+            let filters = Arc::clone(&self.filters);
             let verbose = self.verbose;
             let delay = self.delay;
 
@@ -60,8 +64,8 @@ impl HttpFuzzer {
 
     async fn process_word(
         word: String,
-        http_probe: HttpProbe,
-        filters: ProbeResponseFilters,
+        http_probe: Arc<HttpProbe>,
+        filters: Arc<ProbeResponseFilters>,
         verbose: bool,
         delay: Option<Duration>,
         pb: Arc<indicatif::ProgressBar>,
@@ -70,7 +74,7 @@ impl HttpFuzzer {
         let _permit = semaphore.acquire().await;
         pb.inc(1);
 
-        let r = http_probe.probe(&word).await?;
+        let r = http_probe.probe(word.as_str()).await?;
 
         if let Some(response) = filters.filter(r) {
             pb.suspend(|| println!("{}", response.display(verbose)));
