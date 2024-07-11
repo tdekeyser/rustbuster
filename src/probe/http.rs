@@ -2,32 +2,42 @@ use std::collections::HashMap;
 
 use reqwest::{Client, Method, redirect, StatusCode};
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue, USER_AGENT};
-use reqwest::Url;
 
 use crate::{Error, Result};
 use crate::probe::FUZZ;
 
 #[derive(Debug, PartialEq)]
 pub struct ProbeResponse {
-    pub request_url: String,
-    pub status_code: StatusCode,
-    pub content_length: u32,
-    pub body: String,
+    word: String,
+    request_url: String,
+    status_code: StatusCode,
+    body: String,
 }
 
 impl ProbeResponse {
     pub fn display(&self, verbose: bool) -> String {
         if verbose {
-            let url_path = Url::parse(self.request_url.as_str())
-                .map(|u| u.path().to_owned())
-                .unwrap_or_default();
-
             return format!("{:<30} ({:>10}) [Size: {:?}]",
-                           url_path,
+                           self.word,
                            self.status_code,
-                           self.content_length);
+                           self.body.len());
         }
         self.request_url.clone()
+    }
+
+    pub fn new(word: String,
+               request_url: String,
+               status_code: StatusCode,
+               body: String) -> Self {
+        Self { word, request_url, status_code, body }
+    }
+
+    pub fn status_code(&self) -> StatusCode {
+        self.status_code
+    }
+
+    pub fn body(&self) -> &str {
+        &self.body
     }
 }
 
@@ -55,14 +65,13 @@ impl HttpProbe {
 
         let status_code = response.status();
         let body = response.text().await.ok().unwrap_or_default();
-        let content_length = body.len() as u32;
 
-        Ok(ProbeResponse {
+        Ok(ProbeResponse::new(
+            word.to_string(),
             request_url,
             status_code,
-            content_length,
             body,
-        })
+        ))
     }
 
     fn replace_keyword_in_headers(&self, word: &str) -> Result<HeaderMap> {
@@ -220,8 +229,8 @@ mod tests {
 
         let r = fuzzer.probe("hello").await?;
 
-        assert_eq!(r.status_code, StatusCode::OK);
-        assert_eq!(r.content_length, 5);
+        assert_eq!(r.status_code(), StatusCode::OK);
+        assert_eq!(r.body().len(), 5);
         Ok(())
     }
 
@@ -242,7 +251,7 @@ mod tests {
 
         let r = fuzzer.probe("fill-to-header").await?;
 
-        assert_eq!(r.status_code, StatusCode::OK);
+        assert_eq!(r.status_code(), StatusCode::OK);
         Ok(())
     }
 }

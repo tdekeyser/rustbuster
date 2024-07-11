@@ -18,9 +18,9 @@ impl ProbeResponseFilters {
     }
 
     pub fn filter(&self, response: ProbeResponse) -> Option<ProbeResponse> {
-        let ignore_response = self.filter_status_codes.contains(&response.status_code) ||
-            self.filter_content_length.matches(response.content_length) ||
-            self.filter_body.matches(&response.body);
+        let ignore_response = self.filter_status_codes.contains(&response.status_code()) ||
+            self.filter_content_length.matches(response.body().len()) ||
+            self.filter_body.matches(&response.body());
 
         return match ignore_response {
             true => None,
@@ -46,18 +46,18 @@ mod tests {
             FilterBody::Empty,
         );
 
-        let response = ProbeResponse {
-            request_url: "url".to_string(),
-            status_code: StatusCode::OK,
-            content_length: 50,
-            body: "".to_string(),
-        };
+        let response = ProbeResponse::new(
+            String::default(),
+            "url".to_string(),
+            StatusCode::OK,
+            "hello".to_string(),
+        );
 
         match filters.filter(response) {
             None => Err("expected response".to_string()),
             Some(r) => {
-                assert_eq!(r.status_code, StatusCode::OK);
-                assert_eq!(r.content_length, 50);
+                assert_eq!(r.status_code(), StatusCode::OK);
+                assert_eq!(r.body().len(), 5);
                 Ok(())
             }
         }
@@ -71,12 +71,12 @@ mod tests {
             FilterBody::Empty,
         );
 
-        let response = ProbeResponse {
-            request_url: "url".to_string(),
-            status_code: StatusCode::NOT_FOUND,
-            content_length: 50,
-            body: "".to_string(),
-        };
+        let response = ProbeResponse::new(
+            String::default(),
+            "url".to_string(),
+            StatusCode::NOT_FOUND,
+            "".to_string(),
+        );
 
         assert_eq!(filters.filter(response), None);
     }
@@ -85,16 +85,16 @@ mod tests {
     fn filter_ignores_content_length() {
         let filters = ProbeResponseFilters::new(
             Vec::new(),
-            FilterContentLength::Separate(vec![35]),
+            FilterContentLength::Separate(vec![35usize]),
             FilterBody::Empty,
         );
 
-        let response = ProbeResponse {
-            request_url: "url".to_string(),
-            status_code: StatusCode::NOT_FOUND,
-            content_length: 35,
-            body: "".to_string(),
-        };
+        let response = ProbeResponse::new(
+            String::default(),
+            "url".to_string(),
+            StatusCode::NOT_FOUND,
+            "qwertyuioplkjhgfdsazxcvbnmlkpoiujyh".to_string(),
+        );
 
         assert_eq!(filters.filter(response), None);
     }
@@ -103,16 +103,16 @@ mod tests {
     fn filter_body_contains_is_ignored() {
         let filters = ProbeResponseFilters::new(
             Vec::new(),
-            FilterContentLength::Separate(vec![35]),
+            FilterContentLength::Empty,
             FilterBody::Text("strange word!".to_string()),
         );
 
-        let response = ProbeResponse {
-            request_url: "url".to_string(),
-            status_code: StatusCode::NOT_FOUND,
-            content_length: 35,
-            body: "this contains a strange word!".to_string(),
-        };
+        let response = ProbeResponse::new(
+            String::default(),
+            "url".to_string(),
+            StatusCode::NOT_FOUND,
+            "this contains a strange word!".to_string(),
+        );
 
         assert_eq!(filters.filter(response), None);
     }

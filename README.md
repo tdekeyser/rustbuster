@@ -32,7 +32,10 @@ Options:
           Print version
 ```
 
-## TODO
+## Examples
 
-[ ] Vhost lookup does not work: `rustbuster --url http://FUZZ.permx.htb --wordlist vhosts.txt` 
-[ ] improve performance using multi-threading
+Virtual host fuzzing can be done similar to `ffuf`:
+
+```
+rustbuster -v -H "Host: FUZZ.something.com" -w "/path/to/wordlist.txt" -u $URL
+```
