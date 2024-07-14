@@ -18,6 +18,8 @@ Options:
           Custom headers; use the format "Header1: Content1, Header2: Content2"
   -d, --delay <DELAY>
           Seconds of delay between requests, in seconds
+  -t, --threads <THREADS>
+          Number of threads, default 10 [default: 10]
       --filter-status-codes <FILTER_STATUS_CODES>
           Status code that will be ignored, e.g. 404,500 [default: 404]
       --filter-content-length <FILTER_CONTENT_LENGTH>
@@ -39,3 +41,7 @@ Virtual host fuzzing can be done similar to `ffuf`:
 ```
 rustbuster -v -H "Host: FUZZ.something.com" -w "/path/to/wordlist.txt" -u $URL
 ```
+
+## TODO
+
+[ ] Add body parameter
