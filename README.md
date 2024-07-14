@@ -17,7 +17,7 @@ Options:
   -H, --headers <HEADERS>
           Custom headers; use the format "Header1: Content1, Header2: Content2"
   -d, --delay <DELAY>
-          Seconds of delay between requests, in seconds
+          Delay between requests, in seconds
   -t, --threads <THREADS>
           Number of threads, default 10 [default: 10]
       --filter-status-codes <FILTER_STATUS_CODES>
