@@ -1,10 +1,8 @@
-use std::error::Error;
-
 use clap::Parser;
-use reqwest::{Method, StatusCode};
-use reqwest::header::{HeaderName, HeaderValue};
+use http::{Method, StatusCode};
 
 use crate::filters::{FilterBody, FilterContentLength};
+use crate::Result;
 
 /// Imitation of Gobuster/ffuf in Rust.
 #[derive(Parser)]
@@ -28,7 +26,11 @@ pub struct Cli {
 
     /// Custom headers; use the format "Header1: Content1, Header2: Content2"
     #[arg(short = 'H', long, value_delimiter = ',', value_parser = parse_headers, required = false)]
-    pub headers: Vec<(HeaderName, HeaderValue)>,
+    pub headers: Vec<(String, String)>,
+
+    /// Request body
+    #[arg(short, long)]
+    pub body: String,
 
     /// Delay between requests, in seconds
     #[arg(short, long, default_value_t = 0.0)]
@@ -55,11 +57,11 @@ pub struct Cli {
     pub verbose: bool,
 }
 
-fn parse_headers(s: &str) -> Result<(HeaderName, HeaderValue), Box<dyn Error + Send + Sync + 'static>> {
+fn parse_headers(s: &str) -> Result<(String, String)> {
     let pos = s
         .find(':')
         .ok_or_else(|| format!("invalid content for `{s}`: format 'Header1: Content1, Header2: Content2'"))?;
-    Ok((s[..pos].trim().parse()?, s[pos + 1..].trim().parse()?))
+    Ok((s[..pos].trim().to_string(), s[pos + 1..].trim().to_string()))
 }
 
 
@@ -67,22 +69,20 @@ fn parse_headers(s: &str) -> Result<(HeaderName, HeaderValue), Box<dyn Error + S
 mod tests {
     use std::error::Error;
 
-    use reqwest::header::{HeaderName, HeaderValue};
-
     use crate::cli::parse_headers;
 
     #[test]
     fn parse_key_val_parses_colon() -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
         let (key, val) = parse_headers("user-agent: rustbuster")?;
 
-        assert_eq!(key, HeaderName::from_static("user-agent"));
-        assert_eq!(val, HeaderValue::from_static("rustbuster"));
+        assert_eq!(key, "user-agent");
+        assert_eq!(val, "rustbuster");
         Ok(())
     }
 
     #[test]
     #[should_panic]
     fn parse_headers_invalid_header_name() {
-        parse_headers("User Agent: hello").unwrap();
+        parse_headers("User Agent; hello!,").unwrap();
     }
 }

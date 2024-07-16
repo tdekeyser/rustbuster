@@ -1,4 +1,4 @@
-use reqwest::StatusCode;
+use http::StatusCode;
 
 use crate::filters::body::FilterBody;
 use crate::filters::content_length::FilterContentLength;

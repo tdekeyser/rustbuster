@@ -19,7 +19,8 @@ async fn main() -> Result<()> {
     let http_probe = probe::HttpProbe::builder()
         .with_url(args.url)
         .with_method(args.method)
-        .with_headers(args.headers)
+        .with_headers(args.headers)?
+        .with_body(args.body)
         .build()?;
 
     let filters = filters::ProbeResponseFilters::new(

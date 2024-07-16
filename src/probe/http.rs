@@ -1,7 +1,8 @@
 use std::collections::HashMap;
 
-use reqwest::{Client, Method, redirect, StatusCode};
-use reqwest::header::{HeaderMap, HeaderName, HeaderValue, USER_AGENT};
+use http::{Method, StatusCode};
+use http::header::{HeaderMap, HeaderName};
+use reqwest::{Client, redirect};
 
 use crate::{Error, Result};
 use crate::probe::FUZZ;
@@ -46,6 +47,7 @@ pub struct HttpProbe {
     client: Client,
     method: Method,
     fuzzed_headers: HashMap<String, String>,
+    body: String,
 }
 
 impl HttpProbe {
@@ -56,10 +58,12 @@ impl HttpProbe {
     pub async fn probe(&self, word: &str) -> Result<ProbeResponse> {
         let request_url = self.url.replace(FUZZ, word);
         let extra_headers = self.replace_keyword_in_headers(word)?;
+        let body = self.body.replace(FUZZ, word);
 
         let response = self.client
             .request(self.method.clone(), &request_url)
             .headers(extra_headers)
+            .body(body)
             .send()
             .await?;
 
@@ -78,9 +82,10 @@ impl HttpProbe {
         let mut headers = HeaderMap::new();
 
         for (k, v) in self.fuzzed_headers.iter() {
-            let key = k.replace(FUZZ, word);
-            let value = v.replace(FUZZ, word);
-            headers.insert(HeaderName::from_bytes(key.as_bytes())?, value.parse()?);
+            headers.insert(
+                HeaderName::from_bytes(k.replace(FUZZ, word).as_bytes())?,
+                v.replace(FUZZ, word).parse()?,
+            );
         }
         Ok(headers)
     }
@@ -91,18 +96,17 @@ pub struct HttpProbeBuilder {
     method: Method,
     headers: HeaderMap,
     fuzzed_headers: HashMap<String, String>,
+    body: String,
 }
 
 impl HttpProbeBuilder {
     pub fn new() -> HttpProbeBuilder {
-        let mut headers = HeaderMap::new();
-        headers.insert(USER_AGENT, HeaderValue::from_static("rustbuster"));
-
         HttpProbeBuilder {
             url: "http://localhost:8080/FUZZ".parse().unwrap(),
-            headers,
             method: Method::GET,
+            headers: HeaderMap::new(),
             fuzzed_headers: HashMap::new(),
+            body: String::default(),
         }
     }
 
@@ -119,13 +123,21 @@ impl HttpProbeBuilder {
             client,
             method: self.method,
             fuzzed_headers: self.fuzzed_headers,
+            body: self.body,
         })
     }
 
     fn validate(&self) -> Result<()> {
-        match self.url.contains(FUZZ) || self.fuzzed_headers.iter().count() > 0 {
-            true => Ok(()),
-            false => Err(Error::FuzzKeywordNotFound)
+        let conditions = [
+            self.url.contains(FUZZ),
+            self.body.contains(FUZZ),
+            !self.fuzzed_headers.is_empty()
+        ];
+
+        if conditions.iter().any(|&c| c) {
+            Ok(())
+        } else {
+            Err(Error::FuzzKeywordNotFound)
         }
     }
 
@@ -139,28 +151,31 @@ impl HttpProbeBuilder {
         self
     }
 
-    pub fn with_headers(mut self, headers: Vec<(HeaderName, HeaderValue)>) -> HttpProbeBuilder {
-        self.headers.extend(headers.iter()
-            .map(|(k, v)| (k.clone(), v.clone()))
-            .collect::<HashMap<HeaderName, HeaderValue>>());
-
-        self.fuzzed_headers.extend(
-            headers.iter()
-                .filter(|(k, v)| format!("{:?}{:?}", k, v).contains("FUZZ"))
-                .map(|(k, v)| (k.clone().to_string(), String::from(v.clone().to_str().unwrap_or_default())))
-                .collect::<HashMap<String, String>>());
-
+    pub fn with_body(mut self, body: String) -> HttpProbeBuilder {
+        self.body = body;
         self
+    }
+
+    pub fn with_headers(mut self, headers: Vec<(String, String)>) -> Result<HttpProbeBuilder> {
+        for (k, v) in headers {
+            if format!("{:?}{:?}", k, v).contains(FUZZ) {
+                self.fuzzed_headers.insert(k, v);
+            } else {
+                self.headers.insert(HeaderName::from_bytes(k.as_bytes())?, v.parse()?);
+            }
+        }
+        Ok(self)
     }
 }
 
 
 #[cfg(test)]
 mod tests {
+    use http::Method;
     use reqwest::header::{COOKIE, USER_AGENT};
     use reqwest::StatusCode;
 
-    use crate::probe::HttpProbe;
+    use crate::probe::{FUZZ, HttpProbe};
     use crate::Result;
 
     #[test]
@@ -202,13 +217,13 @@ mod tests {
     fn headers_containing_fuzz_are_fuzzed_headers() -> Result<()> {
         let builder = HttpProbe::builder()
             .with_headers(vec![
-                (USER_AGENT, "hello".parse()?),
-                (COOKIE, "FUZZ".parse()?),
-            ]);
+                (USER_AGENT.to_string(), "hello".to_string()),
+                (COOKIE.to_string(), "FUZZ".to_string()),
+            ])?;
 
         assert!(builder.fuzzed_headers.get(COOKIE.as_str()).is_some());
         assert!(builder.fuzzed_headers.get(USER_AGENT.as_str()).is_none());
-        assert!(builder.headers.get(COOKIE.as_str()).is_some());
+        assert!(builder.headers.get(COOKIE.as_str()).is_none());
         assert!(builder.headers.get(USER_AGENT.as_str()).is_some());
         Ok(())
     }
@@ -221,10 +236,8 @@ mod tests {
             .with_body("hello")
             .create_async().await;
 
-        let url = format!("{}/FUZZ", server.url());
-
         let fuzzer = HttpProbe::builder()
-            .with_url(url)
+            .with_url(format!("{}/FUZZ", server.url()))
             .build()?;
 
         let r = fuzzer.probe("hello").await?;
@@ -235,21 +248,58 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn fuzzer_keyword_in_headers() -> Result<()> {
+    async fn fuzzer_keyword_in_header_value() -> Result<()> {
         let mut server = mockito::Server::new_async().await;
         server.mock("GET", "/do-fuzz")
             .match_header(USER_AGENT.as_str(), "fill-to-header")
             .create_async()
             .await;
 
-        let url = format!("{}/do-fuzz", server.url());
-
-        let fuzzer = HttpProbe::builder()
-            .with_url(url)
-            .with_headers(vec![(USER_AGENT, "FUZZ".parse()?)])
+        let http_probe = HttpProbe::builder()
+            .with_url(format!("{}/do-fuzz", server.url()))
+            .with_headers(vec![(USER_AGENT.to_string(), "FUZZ".to_string())])?
             .build()?;
 
-        let r = fuzzer.probe("fill-to-header").await?;
+        let r = http_probe.probe("fill-to-header").await?;
+
+        assert_eq!(r.status_code(), StatusCode::OK);
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn fuzzer_keyword_in_header_name() -> Result<()> {
+        let mut server = mockito::Server::new_async().await;
+        server.mock("GET", "/do-fuzz")
+            .match_header("X-replaced-word", "100")
+            .create_async()
+            .await;
+
+        let http_probe = HttpProbe::builder()
+            .with_url(format!("{}/do-fuzz", server.url()))
+            .with_headers(vec![(FUZZ.to_string(), "100".to_string())])?
+            .build()?;
+
+        let r = http_probe.probe("X-replaced-word").await?;
+
+        assert_eq!(r.status_code(), StatusCode::OK);
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn fuzzer_keyword_in_body() -> Result<()> {
+        let mut server = mockito::Server::new_async().await;
+        server.mock("POST", "/do-fuzz")
+            .match_body("Hello X-replaced-word")
+            .create_async()
+            .await;
+
+        let http_probe = HttpProbe::builder()
+            .with_method(Method::POST)
+            .with_url(format!("{}/do-fuzz", server.url()))
+            .with_body("Hello FUZZ".to_string())
+            .build()?;
+
+        let r = http_probe.probe("X-replaced-word").await?;
 
         assert_eq!(r.status_code(), StatusCode::OK);
         Ok(())
