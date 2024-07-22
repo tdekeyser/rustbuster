@@ -16,6 +16,8 @@ Options:
           Use the following HTTP method [default: GET]
   -H, --headers <HEADERS>
           Custom headers; use the format "Header1: Content1, Header2: Content2"
+  -b, --body <BODY>
+          Request body
   -d, --delay <DELAY>
           Delay between requests, in seconds
   -t, --threads <THREADS>
