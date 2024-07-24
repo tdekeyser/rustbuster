@@ -29,7 +29,7 @@ pub struct Cli {
     pub headers: Vec<(String, String)>,
 
     /// Request body
-    #[arg(short, long)]
+    #[arg(short, long, default_value = "")]
     pub body: String,
 
     /// Delay between requests, in seconds
